@@ -1,19 +1,25 @@
+import os
 import discord
 from discord.ext import commands
 from discord import app_commands
 import asyncio
+
+# ----- 環境変数からトークン取得 -----
+TOKEN = os.environ.get("DISCORD_TOKEN")
+if TOKEN is None:
+    raise ValueError("⚠️ 環境変数 DISCORD_TOKEN が設定されていません！")
 
 # Bot設定
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='/', intents=intents)
 
+# ----- MathBot Cog の定義 -----
 class MathBot(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.counting_channels = {}  # チャンネルごとのカウント状態を保存
-    
-    # Bot起動時
+        self.counting_channels = {}
+
     @commands.Cog.listener()
     async def on_ready(self):
         print(f'{self.bot.user} がログインしました！')
@@ -117,9 +123,6 @@ class MathBot(commands.Cog):
 # Cogを追加
 async def setup_bot():
     await bot.add_cog(MathBot(bot))
-
-# Botを実行
-TOKEN = "MTQxNDk0NzY1Mzc0NTExOTI2Mw.GSY2F3.aqCUQiFnk_FDGNU2AiH8TIG9cw2qRUTPFjgb6M" 
 
 async def main():
     await setup_bot()
