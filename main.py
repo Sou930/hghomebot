@@ -119,7 +119,7 @@ async def setup_bot():
     await bot.add_cog(MathBot(bot))
 
 # Botを実行
-TOKEN = "MTQxNDk0NzY1Mzc0NTExOTI2Mw.GBMKCy.8JofUPUWXDNniT_T3RvoC9IagubETD-XnSwjAw" 
+TOKEN = "MTQxNDk0NzY1Mzc0NTExOTI2Mw.GSY2F3.aqCUQiFnk_FDGNU2AiH8TIG9cw2qRUTPFjgb6M" 
 
 async def main():
     await setup_bot()
