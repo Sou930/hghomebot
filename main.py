@@ -3,11 +3,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import asyncio
-from keep_alive import keep_alive
-
-if __name__ == "__main__":
-    keep_alive()
-    asyncio.run(main())
+from keep_alive import keep_alive  # Flask keep-alive
 
 # ----- 環境変数からトークン取得 -----
 TOKEN = os.environ.get("DISCORD_TOKEN")
@@ -35,7 +31,7 @@ class MathBot(commands.Cog):
         except Exception as e:
             print(f'コマンド同期エラー: {e}')
         print('------')
-    
+
     # カウンティング機能
     @app_commands.command(name='start_counting', description='カウンティングを開始します')
     @app_commands.describe(start_number='開始する数字（デフォルト: 1）')
@@ -47,7 +43,7 @@ class MathBot(commands.Cog):
         await interaction.response.send_message(
             f'🔢 カウンティングを **{start_number}** から開始します！\n次の数字を入力してください。'
         )
-    
+
     @app_commands.command(name='stop_counting', description='カウンティングを停止します')
     async def stop_counting(self, interaction: discord.Interaction):
         if interaction.channel.id in self.counting_channels:
@@ -55,7 +51,7 @@ class MathBot(commands.Cog):
             await interaction.response.send_message('⏹️ カウンティングを停止しました。')
         else:
             await interaction.response.send_message('❌ このチャンネルでカウンティングは開始されていません。')
-    
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot:
@@ -85,7 +81,7 @@ class MathBot(commands.Cog):
                     
             except ValueError:
                 pass  # 数字でない場合は無視
-    
+
     # 進数変換
     @app_commands.command(name='to_binary', description='10進数を2進数に変換します')
     @app_commands.describe(number='変換する10進数')
@@ -133,5 +129,7 @@ async def main():
     await setup_bot()
     await bot.start(TOKEN)
 
+# ----- Render + UptimeRobot 用の起動 -----
 if __name__ == "__main__":
-    asyncio.run(main())
+    keep_alive()        # Flask を立ち上げて HTTP ping に対応
+    asyncio.run(main()) # Bot を起動
