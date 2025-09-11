@@ -3,6 +3,11 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import asyncio
+from keep_alive import keep_alive
+
+if __name__ == "__main__":
+    keep_alive()
+    asyncio.run(main())
 
 # ----- 環境変数からトークン取得 -----
 TOKEN = os.environ.get("DISCORD_TOKEN")
