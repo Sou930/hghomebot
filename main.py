@@ -16,16 +16,16 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='/', intents=intents)
 
 # Cogを追加
-async def setup_bot():
-    from program.count import MathBot  # 移動したCogをインポート
-    await bot.add_cog(MathBot(bot))
+def setup_bot():
+    bot.add_cog(MathBot(bot))
+
 
 async def main():
-    print("🔄 setup_bot 実行中")  # デバッグ
-    await setup_bot()
-    print("🚀 bot.start 実行前")  # デバッグ
+    print("🔄 setup_bot 実行中")
+    setup_bot()  # ← await は不要
+    print("🚀 bot.start 実行前")
     await bot.start(TOKEN)
-    print("✅ bot.start 実行後")  # デバッグ（ここには通常来ない）
+
 
 
 # ----- Render + UptimeRobot 用の起動 -----
