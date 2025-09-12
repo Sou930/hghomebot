@@ -19,54 +19,61 @@ class MathBot(commands.Cog):
         print('------')
 
     # ===== カウンティング機能 =====
-    @app_commands.command(name='start_counting', description='カウンティングを開始します')
-    @app_commands.describe(start_number='開始する数字（デフォルト: 1）')
-    async def start_counting(self, interaction: discord.Interaction, start_number: int = 1):
-        self.counting_channels[interaction.channel.id] = {
-            'current': start_number - 1,
-            'last_user': None
-        }
-        await interaction.response.send_message(
-            f'🔢 カウンティングを **{start_number}** から開始します！\n次の数字を入力してください。'
-        )
+@app_commands.command(name='start_counting', description='カウンティングを開始します')
+@app_commands.describe(start_number='開始する数字（デフォルト: 1）')
+async def start_counting(self, interaction: discord.Interaction, start_number: int = 1):
+    self.counting_channels[interaction.channel.id] = {
+        'current': start_number - 1,
+        'last_user': None,
+        'start_number': start_number  # 後でリセット用に保持
+    }
+    await interaction.response.send_message(
+        f'🔢 カウンティングを **{start_number}** から開始します！'
+    )
 
-    @app_commands.command(name='stop_counting', description='カウンティングを停止します')
-    async def stop_counting(self, interaction: discord.Interaction):
-        if interaction.channel.id in self.counting_channels:
-            del self.counting_channels[interaction.channel.id]
-            await interaction.response.send_message('⏹️ カウンティングを停止しました。')
-        else:
-            await interaction.response.send_message('❌ このチャンネルでカウンティングは開始されていません。')
+@commands.Cog.listener()
+async def on_message(self, message):
+    if message.author.bot:
+        return
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.author.bot:
-            return
-        
-        channel_id = message.channel.id
-        if channel_id in self.counting_channels:
-            try:
-                number = int(message.content.strip())
-                counting_data = self.counting_channels[channel_id]
-                
-                if message.author.id == counting_data['last_user']:
-                    await message.add_reaction('❌')
-                    await message.channel.send(f'{message.author.mention} 連続で数字を入力することはできません！')
-                    return
-                
-                if number == counting_data['current'] + 1:
-                    counting_data['current'] = number
-                    counting_data['last_user'] = message.author.id
-                    await message.add_reaction('✅')
-                    
-                    if number % 100 == 0:
-                        await message.channel.send(f'🎉 **{number}** に到達しました！おめでとうございます！')
-                else:
-                    await message.add_reaction('❌')
-                    await message.channel.send(f'間違いです！次の数字は **{counting_data["current"] + 1}** です。')
-                    
-            except ValueError:
-                pass  # 数字でない場合は無視
+    channel_id = message.channel.id
+    if channel_id in self.counting_channels:
+        counting_data = self.counting_channels[channel_id]
+
+        try:
+            number = int(message.content.strip())
+
+            # 連続投稿チェック
+            if message.author.id == counting_data['last_user']:
+                await message.add_reaction('❌')
+                await message.channel.send(
+                    f'{message.author.mention} 連続で数字を入力することはできません！\n'
+                    f'カウンティングを **{counting_data["start_number"]}** からリセットします。'
+                )
+                # リセット
+                counting_data['current'] = counting_data['start_number'] - 1
+                counting_data['last_user'] = None
+                return
+
+            # 正しい順番かチェック
+            if number == counting_data['current'] + 1:
+                counting_data['current'] = number
+                counting_data['last_user'] = message.author.id
+                await message.add_reaction('✅')
+
+                if number % 100 == 0:
+                    await message.channel.send(f'🎉 **{number}** に到達しました！おめでとうございます！')
+            else:
+                await message.add_reaction('❌')
+                await message.channel.send(
+                    f'間違いです！次の数字は **{counting_data["start_number"]}** からリセットします。'
+                )
+                # リセット
+                counting_data['current'] = counting_data['start_number'] - 1
+                counting_data['last_user'] = None
+
+        except ValueError:
+            pass  # 数字でない場合は無視
 
     # ===== 進数変換 =====
     @app_commands.command(name='to_binary', description='10進数を2進数に変換します')
