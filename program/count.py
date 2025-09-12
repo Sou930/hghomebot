@@ -113,3 +113,11 @@ class MathBot(commands.Cog):
             await interaction.response.send_message(f"{from_base_int}進数 `{number}` → {to_base_int}進数 `{result}`")
         except Exception:
             await interaction.response.send_message('❌ 有効な数字と進数を入力してください。')
+
+    # デバッグ用メソッド
+    def reset_counting(self, counting_data):
+        """カウンティングをリセットする"""
+        counting_data['mistakes'] = counting_data.get('mistakes', 0) + 1
+        counting_data['current'] = 0  # 次に期待する数字が1になる
+        counting_data['last_user'] = None
+        logger.info(f"リセット実行: current={counting_data['current']}")
