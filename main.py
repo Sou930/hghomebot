@@ -10,9 +10,9 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='/', intents=intents)
 
-# Cogを同期で追加
-def setup_bot():
-    bot.add_cog(MathBot(bot))
+# Cogを非同期で追加
+async def setup_bot():
+    await bot.add_cog(MathBot(bot))
 
 # 起動時イベント
 @bot.event
@@ -34,7 +34,7 @@ async def main():
     if TOKEN is None:
         raise ValueError("⚠️ DISCORD_TOKEN が設定されていません！")
     print("🔧 Cog をセットアップ中")
-    setup_bot()
+    await setup_bot()  # 非同期で実行
     print("🚀 Bot 起動中")
     await bot.start(TOKEN)
 
