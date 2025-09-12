@@ -2,26 +2,42 @@ import os
 import discord
 from discord.ext import commands
 import asyncio
-from keep_alive import keep_alive
+from keep_alive import keep_alive  # Flask keep-alive
+from program.count import MathBot  # Cogをインポート
 
-# ===== Bot 設定 =====
+# ===== Bot設定 =====
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix='/', intents=intents)
+
+# Cogを同期で追加
+def setup_bot():
+    bot.add_cog(MathBot(bot))
 
 # 起動時イベント
 @bot.event
 async def on_ready():
-    print(f"✅ Bot is ready! Logged in as {bot.user}")
+    print(f"✅ Bot がログインしました: {bot.user}")
+    print(f"Bot ID: {bot.user.id}")
+    try:
+        synced = await bot.tree.sync()
+        print(f"{len(synced)} 個のスラッシュコマンドを同期しました")
+    except Exception as e:
+        print(f"⚠️ コマンド同期エラー: {e}")
+    print('------')
 
-# メイン処理
+# ----- Discord Bot を起動する async 関数 -----
 async def main():
-    keep_alive()  # Flaskサーバー起動
+    print("🔄 keep_alive 起動中")
+    keep_alive()  # Flaskサーバーを立ち上げて ping 対応
     TOKEN = os.environ.get("DISCORD_TOKEN")
     if TOKEN is None:
-        raise ValueError("⚠️ 環境変数 DISCORD_TOKEN が設定されていません")
+        raise ValueError("⚠️ DISCORD_TOKEN が設定されていません！")
+    print("🔧 Cog をセットアップ中")
+    setup_bot()
+    print("🚀 Bot 起動中")
     await bot.start(TOKEN)
 
-# エントリーポイント
+# ----- エントリーポイント -----
 if __name__ == "__main__":
     asyncio.run(main())
