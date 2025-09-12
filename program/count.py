@@ -11,7 +11,7 @@ class MathBot(commands.Cog):
     # カウンティング機能
     # -----------------------
     @app_commands.command(name='start_counting', description='カウンティングを開始します')
-    async def start_counting(self, interaction, start_number=1):
+    async def start_counting(self, interaction: discord.Interaction, start_number: int = 1):
         self.counting_channels[interaction.channel.id] = {
             'current': start_number - 1,
             'last_user': None
@@ -21,7 +21,7 @@ class MathBot(commands.Cog):
         )
 
     @app_commands.command(name='stop_counting', description='カウンティングを停止します')
-    async def stop_counting(self, interaction):
+    async def stop_counting(self, interaction: discord.Interaction):
         if interaction.channel.id in self.counting_channels:
             del self.counting_channels[interaction.channel.id]
             await interaction.response.send_message('⏹️ カウンティングを停止しました。')
@@ -63,26 +63,26 @@ class MathBot(commands.Cog):
     # 進数変換機能
     # -----------------------
     @app_commands.command(name='to_binary', description='10進数を2進数に変換します')
-    async def to_binary(self, interaction, number):
+    async def to_binary(self, interaction: discord.Interaction, number: str):
         try:
-            number = int(number)
-            await interaction.response.send_message(f"`{number}` → 2進数: `{bin(number)[2:]}`")
+            number_int = int(number)
+            await interaction.response.send_message(f"`{number}` → 2進数: `{bin(number_int)[2:]}`")
         except ValueError:
             await interaction.response.send_message('❌ 有効な整数を入力してください。')
 
     @app_commands.command(name='to_octal', description='10進数を8進数に変換します')
-    async def to_octal(self, interaction, number):
+    async def to_octal(self, interaction: discord.Interaction, number: str):
         try:
-            number = int(number)
-            await interaction.response.send_message(f"`{number}` → 8進数: `{oct(number)[2:]}`")
+            number_int = int(number)
+            await interaction.response.send_message(f"`{number}` → 8進数: `{oct(number_int)[2:]}`")
         except ValueError:
             await interaction.response.send_message('❌ 有効な整数を入力してください。')
 
     @app_commands.command(name='to_hex', description='10進数を16進数に変換します')
-    async def to_hexadecimal(self, interaction, number):
+    async def to_hexadecimal(self, interaction: discord.Interaction, number: str):
         try:
-            number = int(number)
-            await interaction.response.send_message(f"`{number}` → 16進数: `{hex(number)[2:].upper()}`")
+            number_int = int(number)
+            await interaction.response.send_message(f"`{number}` → 16進数: `{hex(number_int)[2:].upper()}`")
         except ValueError:
             await interaction.response.send_message('❌ 有効な整数を入力してください。')
 
@@ -90,14 +90,14 @@ class MathBot(commands.Cog):
         name='convert_base',
         description='任意進数変換を行います (2~36)'
     )
-    async def convert_base(self, interaction, number, from_base, to_base):
+    async def convert_base(self, interaction: discord.Interaction, number: str, from_base: int, to_base: int):
         try:
-            from_base = int(from_base)
-            to_base = int(to_base)
-            if not (2 <= from_base <= 36) or not (2 <= to_base <= 36):
+            from_base_int = int(from_base)
+            to_base_int = int(to_base)
+            if not (2 <= from_base_int <= 36) or not (2 <= to_base_int <= 36):
                 raise ValueError("進数は2から36の範囲で指定してください")
             
-            decimal_value = int(str(number), from_base)
+            decimal_value = int(str(number), from_base_int)
             digits = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
             if decimal_value == 0:
                 result = '0'
@@ -105,11 +105,11 @@ class MathBot(commands.Cog):
                 result = ''
                 temp = abs(decimal_value)
                 while temp > 0:
-                    result = digits[temp % to_base] + result
-                    temp //= to_base
+                    result = digits[temp % to_base_int] + result
+                    temp //= to_base_int
                 if decimal_value < 0:
                     result = '-' + result
 
-            await interaction.response.send_message(f"{from_base}進数 `{number}` → {to_base}進数 `{result}`")
+            await interaction.response.send_message(f"{from_base_int}進数 `{number}` → {to_base_int}進数 `{result}`")
         except Exception:
             await interaction.response.send_message('❌ 有効な数字と進数を入力してください。')
