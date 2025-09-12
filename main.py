@@ -18,6 +18,8 @@ bot = commands.Bot(command_prefix='/', intents=intents)
 # Cogを追加
 def setup_bot():
     bot.add_cog(MathBot(bot))
+    await bot.start(TOKEN)
+
 
 
 async def main():
