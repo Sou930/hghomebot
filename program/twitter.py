@@ -9,8 +9,12 @@ from twikit import Client
 class TwitterCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.client = None
-        self.login_task = asyncio.create_task(self.login())
+        self.client = Client(language="ja")
+        self.client.set_cookies({
+            "auth_token": os.getenv("TWITTER_AUTH_TOKEN"),
+            "ct0": os.getenv("TWITTER_CT0")
+        })
+
 
     async def login(self):
         """Renderの環境変数を使ってログイン"""
