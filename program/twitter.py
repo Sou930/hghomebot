@@ -5,6 +5,7 @@ import os
 import asyncio
 from twikit import Client
 
+
 class TwitterCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -56,3 +57,7 @@ class TwitterCog(commands.Cog):
             embed.add_field(name=f"@{p.user.screen_name}", value=f"{text}\n[リンク]({url})", inline=False)
 
         await interaction.response.send_message(embed=embed)
+
+
+async def setup(bot: commands.Bot):
+    await bot.add_cog(TwitterCog(bot))
