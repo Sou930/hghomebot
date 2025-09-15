@@ -2,22 +2,19 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import os
-import asyncio
 from twikit import Client
-
 
 class TwitterCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.client = Client(language="ja")
-        self.client.set_cookies({
-            "auth_token": os.getenv("TWITTER_AUTH_TOKEN"),
-            "ct0": os.getenv("TWITTER_CT0")
-        })
-
+        self.client = None
+        self.logged_in = False
 
     async def login(self):
-        """Renderの環境変数を使ってログイン"""
+        """Render環境変数からログイン"""
+        if self.logged_in:
+            return
+
         username = os.getenv("TWITTER_USERNAME")
         email = os.getenv("TWITTER_EMAIL")
         password = os.getenv("TWITTER_PASSWORD")
@@ -28,16 +25,26 @@ class TwitterCog(commands.Cog):
 
         self.client = Client("ja")  # 日本語
         await self.client.login(auth_info_1=username, auth_info_2=email, password=password)
+        self.logged_in = True
         print("✅ Twitterにログイン成功")
 
     @app_commands.command(name="twitter_trend", description="日本のTwitterトレンドを表示します")
     async def twitter_trend(self, interaction: discord.Interaction):
-        if not self.client:
-            await interaction.response.send_message("⚠️ Twitterクライアントがまだ準備できていません。しばらくしてから試してください。")
+        # ログイン処理
+        if not self.logged_in:
+            await self.login()
+            if not self.logged_in:
+                await interaction.response.send_message("⚠️ Twitterクライアントが準備できませんでした。")
+                return
+
+        # 日本のトレンド取得（WOEID=23424856）
+        try:
+            trends = await self.client.get_trends("23424856")
+        except Exception as e:
+            await interaction.response.send_message(f"⚠️ トレンド取得中にエラーが発生しました: {e}")
             return
 
-        trends = await self.client.get_trends("23424856")  # 日本のWOEID
-        top_trends = trends[:10]
+        top_trends = trends[:10]  # 上位10件
 
         embed = discord.Embed(title="🇯🇵 日本のTwitterトレンド", color=discord.Color.blue())
         for t in top_trends:
@@ -47,11 +54,18 @@ class TwitterCog(commands.Cog):
 
     @app_commands.command(name="twitter_search", description="Twitterで検索します")
     async def twitter_search(self, interaction: discord.Interaction, keyword: str):
-        if not self.client:
-            await interaction.response.send_message("⚠️ Twitterクライアントがまだ準備できていません。しばらくしてから試してください。")
+        if not self.logged_in:
+            await self.login()
+            if not self.logged_in:
+                await interaction.response.send_message("⚠️ Twitterクライアントが準備できませんでした。")
+                return
+
+        try:
+            posts = await self.client.search_tweet(keyword, "Latest")
+        except Exception as e:
+            await interaction.response.send_message(f"⚠️ 検索中にエラーが発生しました: {e}")
             return
 
-        posts = await self.client.search_tweet(keyword, "Latest")
         top_posts = posts[:5]
 
         embed = discord.Embed(title=f"🔎 Twitter検索: {keyword}", color=discord.Color.green())
@@ -61,7 +75,3 @@ class TwitterCog(commands.Cog):
             embed.add_field(name=f"@{p.user.screen_name}", value=f"{text}\n[リンク]({url})", inline=False)
 
         await interaction.response.send_message(embed=embed)
-
-
-async def setup(bot: commands.Bot):
-    await bot.add_cog(TwitterCog(bot))
