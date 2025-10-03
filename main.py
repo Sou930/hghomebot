@@ -29,6 +29,8 @@ async def setup():
     await bot.add_cog(CountCog(bot))
     await bot.add_cog(BaseCog(bot))
     await bot.add_cog(EarthquakeCog(bot))
+    await bot.load_extension("program.currency")
+
     
 async def main():
     await setup()
