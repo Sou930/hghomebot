@@ -1,22 +1,14 @@
 import os
 import discord
 from discord.ext import commands
-from discord import app_commands
 
 from keep_alive import keep_alive
-from program.count import CountCog
-from program.base import BaseCog
-from program.currency import Currency
-from program.casino import Casino
 
-# 🔹 Firebase 初期化
-from DATA.firebase_init import init_firebase
-init_firebase()
-
-TOKEN = os.environ.get("DISCORD_TOKEN")  # Renderの環境変数で設定
+# Token は Render の環境変数から取得
+TOKEN = os.environ.get("DISCORD_TOKEN")
 
 intents = discord.Intents.default()
-intents.message_content = True
+intents.message_content = True  # メッセージ内容の取得を有効化
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -29,16 +21,9 @@ async def on_ready():
     except Exception as e:
         print(f"❌ Sync error: {e}")
 
-# Cogを登録
-async def setup():
-    await bot.add_cog(CountCog(bot))
-    await bot.add_cog(BaseCog(bot))
-    await bot.add_cog(Currency(bot))
-    await bot.add_cog(Casino(bot))
-    
 async def main():
-    await setup()
-    keep_alive()
+    # Cog がまだないので setup は不要
+    keep_alive()  # Render サーバー維持用
     await bot.start(TOKEN)
 
 if __name__ == "__main__":
