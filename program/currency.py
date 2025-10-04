@@ -2,88 +2,89 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import json
-from pathlib import Path
 from datetime import datetime, timedelta
+import os
 
-# 保存ファイルと設定
-DATA_FILE = Path("Data/currency.json")
-BONUS_HOURS = 20      # ログインボーナス間隔（20時間）
-DAILY_AMOUNT = 100    # ボーナス額
-
-def load_data():
-    if DATA_FILE.exists():
-        with open(DATA_FILE, "r") as f:
-            return json.load(f)
-    return {}
-
-def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=2)
-
-def add_currency(user_id, amount):
-    """ユーザーに通貨を加算"""
-    data = load_data()
-    user = data.get(str(user_id), {"balance": 0, "last_daily": None})
-    user["balance"] += amount
-    data[str(user_id)] = user
-    save_data(data)
-    return user["balance"]
-
-def can_receive_daily(user_id):
-    """ログインボーナスを受け取れるか判定"""
-    data = load_data()
-    user = data.get(str(user_id))
-    if not user or not user.get("last_daily"):
-        return True
-    last_claim = datetime.fromisoformat(user["last_daily"])
-    return (datetime.utcnow() - last_claim) >= timedelta(hours=BONUS_HOURS)
-
-def claim_daily(user_id):
-    """ログインボーナスを受け取る処理"""
-    data = load_data()
-    user = data.get(str(user_id), {"balance": 0, "last_daily": None})
-
-    if can_receive_daily(user_id):
-        user["balance"] += DAILY_AMOUNT
-        user["last_daily"] = datetime.utcnow().isoformat()
-        data[str(user_id)] = user
-        save_data(data)
-        return True, user["balance"]
-    else:
-        return False, user["balance"]
-
-def get_balance(user_id):
-    """所持金を取得"""
-    data = load_data()
-    user = data.get(str(user_id), {"balance": 0})
-    return user["balance"]
-
-# =====================
-# Discord Bot スラッシュコマンド
-# =====================
+DATA_FILE = "Data/currency.json"
 
 class Currency(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        if not os.path.exists(DATA_FILE):
+            with open(DATA_FILE, "w", encoding="utf-8") as f:
+                json.dump({}, f, indent=4)
+
+    def load_data(self):
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def save_data(self, data):
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4)
 
     @app_commands.command(name="daily", description="20時間おきにログインボーナスを受け取る")
     async def daily(self, interaction: discord.Interaction):
-        success, balance = claim_daily(interaction.user.id)
-        if success:
-            await interaction.response.send_message(
-                f"🎉 {interaction.user.mention} ボーナス{DAILY_AMOUNT}を受け取りました！\n💰 現在の所持金: {balance}"
-            )
-        else:
-            await interaction.response.send_message(
-                f"⏳ {interaction.user.mention} まだボーナスを受け取れません。\n💰 現在の所持金: {balance}"
-            )
+        user_id = str(interaction.user.id)
+        data = self.load_data()
+        now = datetime.utcnow()
 
-    @app_commands.command(name="balance", description="現在の所持金を確認する")
+        if user_id not in data:
+            data[user_id] = {"balance": 0, "last_daily": "2000-01-01T00:00:00"}
+
+        last_claim = datetime.fromisoformat(data[user_id]["last_daily"])
+        if now - last_claim < timedelta(hours=20):
+            remaining = timedelta(hours=20) - (now - last_claim)
+            await interaction.response.send_message(
+                f"⏳ 次のログインボーナスまで {remaining.seconds // 3600}時間{(remaining.seconds % 3600) // 60}分 です。",
+                ephemeral=True
+            )
+            return
+
+        reward = 500  # 例: 500コイン
+        data[user_id]["balance"] += reward
+        data[user_id]["last_daily"] = now.isoformat()
+        self.save_data(data)
+
+        await interaction.response.send_message(f"🎉 {reward}コインを受け取りました！")
+
+    @app_commands.command(name="balance", description="自分の所持金を確認する")
     async def balance(self, interaction: discord.Interaction):
-        balance = get_balance(interaction.user.id)
-        await interaction.response.send_message(
-            f"💰 {interaction.user.mention} の所持金: {balance}"
+        user_id = str(interaction.user.id)
+        data = self.load_data()
+        balance = data.get(user_id, {}).get("balance", 0)
+        await interaction.response.send_message(f"💰 現在の所持金: {balance} コイン")
+
+    @app_commands.command(name="top", description="所持金ランキングを表示する")
+    @app_commands.describe(type="ランキングの種類を選択 (今は balance のみ対応)")
+    async def top(self, interaction: discord.Interaction, type: str):
+        if type != "balance":
+            await interaction.response.send_message("⚠️ 現在は `type: balance` のみ対応しています。")
+            return
+
+        data = self.load_data()
+        if not data:
+            await interaction.response.send_message("データがありません。")
+            return
+
+        # ランキング作成
+        sorted_data = sorted(
+            data.items(),
+            key=lambda x: x[1].get("balance", 0),
+            reverse=True
         )
 
-async def setup(bot: commands.Bot):
+        desc = ""
+        for rank, (uid, info) in enumerate(sorted_data[:10], start=1):
+            user = await self.bot.fetch_user(int(uid))
+            desc += f"**#{rank}** {user.name} — 💰 {info['balance']} コイン\n"
+
+        embed = discord.Embed(
+            title="🏆 所持金ランキング",
+            description=desc,
+            color=discord.Color.gold()
+        )
+        await interaction.response.send_message(embed=embed)
+
+
+async def setup(bot):
     await bot.add_cog(Currency(bot))
