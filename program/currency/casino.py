@@ -32,7 +32,7 @@ class Casino(commands.Cog):
         ref.set({"coins": coins}, merge=True)
         return True
 
-    # 🔹 /cointoss コマンド
+    # 🔹 /cointoss
     @app_commands.command(name="cointoss", description="コイントスで勝負")
     @app_commands.describe(bet="賭けるコインの量")
     async def cointoss(self, interaction: discord.Interaction, bet: int):
@@ -51,7 +51,7 @@ class Casino(commands.Cog):
         else:
             await interaction.response.send_message(f"💔 結果: 裏。 {bet} コインを失いました。")
 
-    # 🔹 /slot コマンド
+    # 🔹 /slot
     @app_commands.command(name="slot", description="スロットで遊ぶ")
     @app_commands.describe(bet="賭けるコインの量")
     async def slot(self, interaction: discord.Interaction, bet: int):
@@ -70,9 +70,33 @@ class Casino(commands.Cog):
         if win:
             payout = bet * 5
             await self.add_coins(interaction.user.id, payout)
-            await interaction.response.send_message(f"🎰 | {' '.join(result)}\n大当たり！ {payout} コインを獲得！")
+            await interaction.response.send_message(f"🎰 {' '.join(result)}\n大当たり！ {payout} コインを獲得！")
         else:
-            await interaction.response.send_message(f"🎰 | {' '.join(result)}\n残念、{bet} コインを失いました。")
+            await interaction.response.send_message(f"🎰 {' '.join(result)}\n残念、{bet} コインを失いました。")
+
+    # 🔹 /dice
+    @app_commands.command(name="dice", description="1～6 の数字を予想して賭ける")
+    @app_commands.describe(bet="賭けるコインの量", guess="予想する数字（1～6）")
+    async def dice(self, interaction: discord.Interaction, bet: int, guess: int):
+        if bet <= 0:
+            await interaction.response.send_message("❌ 1以上の値を指定してください。", ephemeral=True)
+            return
+        if not (1 <= guess <= 6):
+            await interaction.response.send_message("❌ 1～6 の数字を指定してください。", ephemeral=True)
+            return
+
+        can_play = await self.remove_coins(interaction.user.id, bet)
+        if not can_play:
+            await interaction.response.send_message("❌ コインが不足しています。", ephemeral=True)
+            return
+
+        result = random.randint(1, 6)
+        if guess == result:
+            payout = bet * 6
+            await self.add_coins(interaction.user.id, payout)
+            await interaction.response.send_message(f"🎲 出目: {result}！ おめでとう！ {payout} コインを獲得！")
+        else:
+            await interaction.response.send_message(f"🎲 出目: {result}。残念、{bet} コインを失いました。")
 
 # 🔹 Cog登録用
 async def setup(bot, db):
