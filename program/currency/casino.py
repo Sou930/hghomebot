@@ -1,41 +1,79 @@
-import random
 import discord
-from discord import app_commands
 from discord.ext import commands
+from discord import app_commands
+import random
+from firebase_admin import firestore
 
 class Casino(commands.Cog):
     def __init__(self, bot, db):
         self.bot = bot
         self.db = db
 
-    @app_commands.command(name="cointoss", description="コイントスでコインを賭けます（50%の確率で2倍）")
-    @app_commands.describe(bet="賭けるコインの枚数")
+    def get_user_ref(self, user_id):
+        return self.db.collection("users").document(str(user_id))
+
+    async def add_coins(self, user_id, amount):
+        ref = self.get_user_ref(user_id)
+        doc = ref.get()
+        if doc.exists:
+            coins = doc.to_dict().get("coins", 0) + amount
+        else:
+            coins = amount
+        ref.set({"coins": coins}, merge=True)
+        return coins
+
+    async def remove_coins(self, user_id, amount):
+        ref = self.get_user_ref(user_id)
+        doc = ref.get()
+        coins = doc.to_dict().get("coins", 0) if doc.exists else 0
+        if coins < amount:
+            return False
+        coins -= amount
+        ref.set({"coins": coins}, merge=True)
+        return True
+
+    # 🔹 /cointoss コマンド
+    @app_commands.command(name="cointoss", description="コイントスで勝負")
+    @app_commands.describe(bet="賭けるコインの量")
     async def cointoss(self, interaction: discord.Interaction, bet: int):
         if bet <= 0:
-            await interaction.response.send_message("❌ 賭け額は1以上で入力してください。")
+            await interaction.response.send_message("❌ 1以上の値を指定してください。", ephemeral=True)
             return
-
-        user_id = str(interaction.user.id)
-        user_ref = self.db.collection("users").document(user_id)
-        user_data = user_ref.get().to_dict() or {"coins": 0}
-        coins = user_data.get("coins", 0)
-
-        if coins < bet:
-            await interaction.response.send_message("❌ コインが足りません！")
+        can_play = await self.remove_coins(interaction.user.id, bet)
+        if not can_play:
+            await interaction.response.send_message("❌ コインが不足しています。", ephemeral=True)
             return
 
         result = random.choice(["表", "裏"])
-        win = random.choice([True, False])
+        if result == "表":  # 勝利
+            await self.add_coins(interaction.user.id, bet * 2)
+            await interaction.response.send_message(f"🎉 結果: 表！ {bet*2} コインを獲得しました！")
+        else:
+            await interaction.response.send_message(f"💔 結果: 裏。 {bet} コインを失いました。")
+
+    # 🔹 /slot コマンド
+    @app_commands.command(name="slot", description="スロットで遊ぶ")
+    @app_commands.describe(bet="賭けるコインの量")
+    async def slot(self, interaction: discord.Interaction, bet: int):
+        if bet <= 0:
+            await interaction.response.send_message("❌ 1以上の値を指定してください。", ephemeral=True)
+            return
+        can_play = await self.remove_coins(interaction.user.id, bet)
+        if not can_play:
+            await interaction.response.send_message("❌ コインが不足しています。", ephemeral=True)
+            return
+
+        icons = ["🍒", "🍋", "🍊", "🍇", "7️⃣"]
+        result = [random.choice(icons) for _ in range(3)]
+        win = result[0] == result[1] == result[2]
 
         if win:
-            coins += bet
-            msg = f"🎉 {result}！ あなたの勝ち！ {bet}コイン獲得！"
+            payout = bet * 5
+            await self.add_coins(interaction.user.id, payout)
+            await interaction.response.send_message(f"🎰 {' '.join(result)}\n大当たり！ {payout} コインを獲得！")
         else:
-            coins -= bet
-            msg = f"💀 {result}！ 残念、負けです… {bet}コイン失いました。"
+            await interaction.response.send_message(f"🎰 {' '.join(result)}\n残念、{bet} コインを失いました。")
 
-        user_ref.set({ "coins": coins }, merge=True)
-
-        await interaction.response.send_message(
-            f"{msg}\n現在の所持金: **{coins}** コイン"
-        )
+# 🔹 Cog登録用
+async def setup(bot, db):
+    await bot.add_cog(Casino(bot, db))
