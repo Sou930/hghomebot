@@ -1,43 +1,32 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-import json
 from datetime import datetime, timedelta
-import os
-
-DATA_FILE = "Data/currency.json"
+from DATA.firebase_db import get_user_balance, set_user_balance
+from DATA.firebase_db import db  # Firestoreクライアント
 
 class Currency(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        if not os.path.exists(DATA_FILE):
-            with open(DATA_FILE, "w", encoding="utf-8") as f:
-                json.dump({}, f, indent=4)
-
-    def load_data(self):
-        if not os.path.exists(DATA_FILE):
-            return {}
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            try:
-                return json.load(f)
-            except json.JSONDecodeError:
-                return {}
-
-    def save_data(self, data):
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4)
 
     # --- /daily ---
     @app_commands.command(name="daily", description="20時間おきにログインボーナスを受け取る")
     async def daily(self, interaction: discord.Interaction):
         user_id = str(interaction.user.id)
-        data = self.load_data()
         now = datetime.utcnow()
 
-        if user_id not in data:
-            data[user_id] = {"balance": 0, "last_daily": "2000-01-01T00:00:00"}
+        # Firestoreからユーザーデータ取得
+        doc_ref = db.collection("users").document(user_id)
+        doc = doc_ref.get()
+        if doc.exists:
+            user_data = doc.to_dict()
+            last_claim = datetime.fromisoformat(user_data.get("last_daily", "2000-01-01T00:00:00"))
+            balance = user_data.get("balance", 0)
+        else:
+            last_claim = datetime(2000, 1, 1)
+            balance = 0
+            doc_ref.set({"balance": balance, "last_daily": last_claim.isoformat()})
 
-        last_claim = datetime.fromisoformat(data[user_id]["last_daily"])
         if now - last_claim < timedelta(hours=20):
             remaining = timedelta(hours=20) - (now - last_claim)
             await interaction.response.send_message(
@@ -47,9 +36,8 @@ class Currency(commands.Cog):
             return
 
         reward = 500
-        data[user_id]["balance"] += reward
-        data[user_id]["last_daily"] = now.isoformat()
-        self.save_data(data)
+        balance += reward
+        doc_ref.update({"balance": balance, "last_daily": now.isoformat()})
 
         await interaction.response.send_message(f"🎉 {reward}コインを受け取りました！")
 
@@ -57,15 +45,17 @@ class Currency(commands.Cog):
     @app_commands.command(name="balance", description="自分の所持金を確認する")
     async def balance(self, interaction: discord.Interaction):
         user_id = str(interaction.user.id)
-        data = self.load_data()
-        balance = data.get(user_id, {}).get("balance", 0)
+        balance = get_user_balance(user_id)
         await interaction.response.send_message(f"💰 現在の所持金: {balance} コイン")
 
     # --- /top ---
     @app_commands.command(name="top", description="ランキングを表示する")
     @app_commands.describe(type="ランキングの種類を選択 (balanceのみ対応)")
     async def top(self, interaction: discord.Interaction, type: str):
-        data = self.load_data()
+        users_ref = db.collection("users")
+        docs = users_ref.stream()
+        data = {doc.id: doc.to_dict() for doc in docs}
+
         if not data or all("balance" not in v for v in data.values()):
             await interaction.response.send_message("📂 まだデータがありません。ログインボーナスを受け取ってみてね！")
             return
