@@ -7,6 +7,7 @@ from keep_alive import keep_alive
 from program.count import CountCog
 from program.base import BaseCog
 from program.weather import EarthquakeCog
+from program.currency import Currency
 
 TOKEN = os.environ.get("DISCORD_TOKEN")  # Renderの環境変数で設定する
 
@@ -29,8 +30,7 @@ async def setup():
     await bot.add_cog(CountCog(bot))
     await bot.add_cog(BaseCog(bot))
     await bot.add_cog(EarthquakeCog(bot))
-    await bot.load_extension("program.currency")
-
+    await bot.add_cog(Currency(bot))
     
 async def main():
     await setup()
