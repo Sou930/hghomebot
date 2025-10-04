@@ -1,48 +1,44 @@
-import datetime
 import discord
-from discord import app_commands
 from discord.ext import commands
+from discord import app_commands
+from firebase_admin import firestore
 
 class Coin(commands.Cog):
     def __init__(self, bot, db):
         self.bot = bot
         self.db = db
 
-    @app_commands.command(name="daily", description="1日1回コインを受け取ります（連続ログインでボーナスアップ）")
-    async def daily(self, interaction: discord.Interaction):
-        user_id = str(interaction.user.id)
-        user_ref = self.db.collection("users").document(user_id)
-        user_data = user_ref.get().to_dict() or {}
+    def get_user_ref(self, user_id):
+        return self.db.collection("users").document(str(user_id))
 
-        now = datetime.datetime.utcnow().date()
-        last_claim = user_data.get("last_daily")
-        streak = user_data.get("streak", 0)
-        coins = user_data.get("coins", 0)
-
-        # 連続ログイン判定
-        if last_claim:
-            last_date = datetime.datetime.strptime(last_claim, "%Y-%m-%d").date()
-            if now == last_date:
-                await interaction.response.send_message("❌ 今日の報酬はすでに受け取っています！")
-                return
-            elif now - last_date == datetime.timedelta(days=1):
-                streak += 1
-            else:
-                streak = 1
+    async def add_coins(self, user_id, amount):
+        ref = self.get_user_ref(user_id)
+        doc = ref.get()
+        if doc.exists:
+            coins = doc.to_dict().get("coins", 0) + amount
         else:
-            streak = 1
+            coins = amount
+        ref.set({"coins": coins}, merge=True)
+        return coins
 
-        reward = 100 + (streak - 1) * 20
-        coins += reward
+    # 🔹 /daily コマンド
+    @app_commands.command(name="daily", description="毎日ログインボーナスを受け取る")
+    async def daily(self, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        coins_added = 100  # 基本100コイン
+        new_total = await self.add_coins(user_id, coins_added)
+        await interaction.response.send_message(f"💰 {coins_added} コインを受け取りました！ 現在の所持: {new_total} コイン")
 
-        user_ref.set({
-            "coins": coins,
-            "last_daily": now.strftime("%Y-%m-%d"),
-            "streak": streak
-        })
+    # 🔹 /give_coin コマンド
+    @app_commands.command(name="give_coin", description="指定ユーザーにコインを渡す")
+    @app_commands.describe(user="コインを渡す相手", price="渡すコインの量")
+    async def give_coin(self, interaction: discord.Interaction, user: discord.Member, price: int):
+        if price <= 0:
+            await interaction.response.send_message("❌ 1以上の値を指定してください。", ephemeral=True)
+            return
+        new_total = await self.add_coins(user.id, price)
+        await interaction.response.send_message(f"✅ {user.mention} に {price} コインを渡しました！ 現在の所持: {new_total} コイン")
 
-        await interaction.response.send_message(
-            f"💰 {reward}コインを受け取りました！\n"
-            f"現在の所持金: **{coins}** コイン\n"
-            f"連続ログイン: **{streak}日**"
-        )
+# 🔹 Cog登録用
+async def setup(bot, db):
+    await bot.add_cog(Coin(bot, db))
