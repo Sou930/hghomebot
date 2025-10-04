@@ -15,8 +15,8 @@ class Admin(commands.Cog):
         return False
 
     # 🔹 Timeout コマンド
-    @app_commands.command(name="timeout", description="指定したユーザーを一時的にミュートします")
-    @app_commands.describe(user="ミュートするユーザー", duration="時間（分単位）")
+    @app_commands.command(name="timeout", description="指定したユーザーをタイムアウトします")
+    @app_commands.describe(user="タイムアウトするユーザー", duration="時間（分単位）")
     async def timeout(self, interaction: discord.Interaction, user: discord.Member, duration: int):
         if duration <= 0:
             await interaction.response.send_message("❌ 時間は1分以上指定してください。", ephemeral=True)
@@ -24,9 +24,9 @@ class Admin(commands.Cog):
 
         try:
             await user.timeout(discord.utils.utcnow() + discord.timedelta(minutes=duration))
-            await interaction.response.send_message(f"⏱ {user.mention} を {duration} 分間ミュートしました。")
+            await interaction.response.send_message(f"⏱ {user.mention} を {duration} 分間タイムアウトしました。")
         except Exception as e:
-            await interaction.response.send_message(f"❌ ミュートできませんでした: {e}", ephemeral=True)
+            await interaction.response.send_message(f"❌ タイムアウトできませんでした: {e}", ephemeral=True)
 
     # 🔹 ロール付与コマンド（/giverole に変更）
     @app_commands.command(name="giverole", description="指定したユーザーにロールを付与します")
