@@ -1,10 +1,11 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 import json
 from pathlib import Path
 from datetime import datetime, timedelta
 
-# 保存先ファイル
+# 保存ファイルと設定
 DATA_FILE = Path("Data/currency.json")
 BONUS_HOURS = 20      # ログインボーナス間隔（20時間）
 DAILY_AMOUNT = 100    # ボーナス額
@@ -58,27 +59,31 @@ def get_balance(user_id):
     return user["balance"]
 
 # =====================
-# Discord Bot コマンド
+# Discord Bot スラッシュコマンド
 # =====================
 
 class Currency(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
-    async def daily(self, ctx):
-        """20時間おきにログインボーナスを受け取る"""
-        success, balance = claim_daily(ctx.author.id)
+    @app_commands.command(name="daily", description="20時間おきにログインボーナスを受け取る")
+    async def daily(self, interaction: discord.Interaction):
+        success, balance = claim_daily(interaction.user.id)
         if success:
-            await ctx.send(f"🎉 {ctx.author.mention} ボーナス{DAILY_AMOUNT}を受け取りました！\n💰 現在の所持金: {balance}")
+            await interaction.response.send_message(
+                f"🎉 {interaction.user.mention} ボーナス{DAILY_AMOUNT}を受け取りました！\n💰 現在の所持金: {balance}"
+            )
         else:
-            await ctx.send(f"⏳ {ctx.author.mention} まだボーナスを受け取れません。\n💰 現在の所持金: {balance}")
+            await interaction.response.send_message(
+                f"⏳ {interaction.user.mention} まだボーナスを受け取れません。\n💰 現在の所持金: {balance}"
+            )
 
-    @commands.command()
-    async def balance(self, ctx):
-        """現在の所持金を確認"""
-        balance = get_balance(ctx.author.id)
-        await ctx.send(f"💰 {ctx.author.mention} の所持金: {balance}")
+    @app_commands.command(name="balance", description="現在の所持金を確認する")
+    async def balance(self, interaction: discord.Interaction):
+        balance = get_balance(interaction.user.id)
+        await interaction.response.send_message(
+            f"💰 {interaction.user.mention} の所持金: {balance}"
+        )
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(Currency(bot))
