@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 
 from keep_alive import keep_alive
-from Data.firebase_init import init_firebase
+from data.firebase_init import init_firebase
 
 # 🔹 Firebase 初期化
 db = init_firebase()
