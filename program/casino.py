@@ -1,29 +1,13 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-import json, random, os
-
-CURRENCY_FILE = "Data/currency.json"
+import random
+from DATA.firebase_db import get_user_balance, set_user_balance, db
+from datetime import datetime
 
 class Casino(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        if not os.path.exists(CURRENCY_FILE):
-            with open(CURRENCY_FILE, "w", encoding="utf-8") as f:
-                json.dump({}, f, indent=4)
-
-    def load_currency(self):
-        if not os.path.exists(CURRENCY_FILE):
-            return {}
-        with open(CURRENCY_FILE, "r", encoding="utf-8") as f:
-            try:
-                return json.load(f)
-            except json.JSONDecodeError:
-                return {}
-
-    def save_currency(self, data):
-        with open(CURRENCY_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4)
 
     @app_commands.command(name="casino", description="カジノで増やそう！")
     @app_commands.describe(
@@ -32,13 +16,9 @@ class Casino(commands.Cog):
     )
     async def casino(self, interaction: discord.Interaction, type: str, bet: int):
         user_id = str(interaction.user.id)
-        data = self.load_currency()
 
-        # 初期データ
-        if user_id not in data:
-            data[user_id] = {"balance": 0, "last_daily": "2000-01-01T00:00:00"}
-
-        balance = data[user_id]["balance"]
+        # Firestoreから残高取得
+        balance = get_user_balance(user_id)
 
         # 入力チェック
         if bet <= 0:
@@ -83,14 +63,12 @@ class Casino(commands.Cog):
             return
 
         # 所持金更新
-        data[user_id]["balance"] += win_amount
-        if data[user_id]["balance"] < 0:
-            data[user_id]["balance"] = 0
-        self.save_currency(data)
+        new_balance = max(balance + win_amount, 0)
+        set_user_balance(user_id, new_balance)
 
         embed = discord.Embed(
             title="🎰 カジノ結果",
-            description=f"{interaction.user.mention}\n\n{result_text}\n\n{result_message}\n💰 現在の所持金: {data[user_id]['balance']} コイン",
+            description=f"{interaction.user.mention}\n\n{result_text}\n\n{result_message}\n💰 現在の所持金: {new_balance} コイン",
             color=discord.Color.purple()
         )
         await interaction.response.send_message(embed=embed)
