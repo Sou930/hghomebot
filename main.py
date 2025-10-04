@@ -35,6 +35,7 @@ async def setup():
     await bot.add_cog(Casino(bot, db))
     await bot.add_cog(Top(bot, db))
 
+
 # 🔹 keep_alive がある場合は呼び出し
 try:
     from keep_alive import keep_alive
