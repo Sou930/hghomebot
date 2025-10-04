@@ -31,10 +31,13 @@ async def setup():
     from program.currency.coin import Coin
     from program.currency.casino import Casino
     from program.top import Top
+    from program.admin import Admin
 
     await bot.add_cog(Coin(bot, db))
     await bot.add_cog(Casino(bot, db))
     await bot.add_cog(Top(bot, db))
+    await bot.add_cog(Admin(bot))
+
 
 # 🔹 メイン関数
 async def main():
