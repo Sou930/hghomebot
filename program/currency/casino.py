@@ -70,9 +70,9 @@ class Casino(commands.Cog):
         if win:
             payout = bet * 5
             await self.add_coins(interaction.user.id, payout)
-            await interaction.response.send_message(f"🎰 {' '.join(result)}\n大当たり！ {payout} コインを獲得！")
+            await interaction.response.send_message(f"🎰 | {' '.join(result)}\n大当たり！ {payout} コインを獲得！")
         else:
-            await interaction.response.send_message(f"🎰 {' '.join(result)}\n残念、{bet} コインを失いました。")
+            await interaction.response.send_message(f"🎰 | {' '.join(result)}\n残念、{bet} コインを失いました。")
 
 # 🔹 Cog登録用
 async def setup(bot, db):
