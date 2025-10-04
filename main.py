@@ -30,7 +30,7 @@ async def on_ready():
 async def setup():
     from program.currency.coin import Coin
     from program.currency.casino import Casino
-    from program.currency.top import Top
+    from program.top import Top
 
     await bot.add_cog(Coin(bot, db))
     await bot.add_cog(Casino(bot, db))
