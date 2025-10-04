@@ -9,7 +9,11 @@ from program.base import BaseCog
 from program.currency import Currency
 from program.casino import Casino
 
-TOKEN = os.environ.get("DISCORD_TOKEN")  # Renderの環境変数で設定する
+# 🔹 Firebase 初期化
+from DATA.firebase_init import init_firebase
+init_firebase()
+
+TOKEN = os.environ.get("DISCORD_TOKEN")  # Renderの環境変数で設定
 
 intents = discord.Intents.default()
 intents.message_content = True
