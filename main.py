@@ -1,22 +1,21 @@
 import os
 import discord
 from discord.ext import commands
-
-from keep_alive import keep_alive
-from data.firebase_init import init_firebase
+from discord import app_commands
+import asyncio
 
 # 🔹 Firebase 初期化
+from data.firebase_init import init_firebase
 db = init_firebase()
 
-# 🔹 Discord Bot設定
-TOKEN = os.environ.get("DISCORD_TOKEN")  # Renderの環境変数から取得
+# 🔹 Bot 初期化
+TOKEN = os.environ.get("DISCORD_TOKEN")  # Render環境変数
 
 intents = discord.Intents.default()
 intents.message_content = True
-
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# 🔹 起動時イベント
+# 🔹 Ready イベント
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
@@ -26,25 +25,27 @@ async def on_ready():
     except Exception as e:
         print(f"❌ Sync error: {e}")
 
-# 🔹 Cogを登録
+# 🔹 Cog登録
 async def setup():
     from program.currency.coin import Coin
     from program.currency.casino import Casino
     from program.top import Top
-    from program.admin import Admin
 
     await bot.add_cog(Coin(bot, db))
     await bot.add_cog(Casino(bot, db))
     await bot.add_cog(Top(bot, db))
-    await bot.add_cog(Admin(bot))
 
+# 🔹 keep_alive がある場合は呼び出し
+try:
+    from keep_alive import keep_alive
+    keep_alive()
+except:
+    pass
 
-# 🔹 メイン関数
+# 🔹 Bot 起動
 async def main():
     await setup()
-    keep_alive()  # Renderでの維持
     await bot.start(TOKEN)
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())
