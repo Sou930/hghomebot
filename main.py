@@ -7,6 +7,7 @@ from keep_alive import keep_alive
 from program.count import CountCog
 from program.base import BaseCog
 from program.currency import Currency
+from program.casino import Casino
 
 TOKEN = os.environ.get("DISCORD_TOKEN")  # Renderの環境変数で設定する
 
@@ -29,6 +30,7 @@ async def setup():
     await bot.add_cog(CountCog(bot))
     await bot.add_cog(BaseCog(bot))
     await bot.add_cog(Currency(bot))
+    await bot.add_cog(Casino(bot))
     
 async def main():
     await setup()
