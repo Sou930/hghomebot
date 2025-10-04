@@ -25,7 +25,7 @@ RenderでホストされているDiscord多機能Botです。
 - `/top type:coin` … 所持金ランキングを表示（データがない場合は「データがありません」と表示）
 
 ### 🎰 カジノ機能
-- `/cointoss bet: … コイントス  
+- `/cointoss bet:` … コイントス  
 
 ### 🛠 管理者機能
 - `/timeout user: duration:` … 指定ユーザーを一時ミュート
