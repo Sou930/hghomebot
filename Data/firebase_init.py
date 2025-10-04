@@ -1,20 +1,24 @@
 import firebase_admin
 from firebase_admin import credentials, firestore
-import os, json
+import os
+
+db = None  # Firestoreクライアント
 
 def init_firebase():
-    # Render環境変数からJSON文字列を取得
-    firebase_key_str = os.environ.get("FIREBASE_KEY")
-    if not firebase_key_str:
-        raise ValueError("FIREBASE_KEY 環境変数が設定されていません")
+    """
+    Firebaseを初期化して、dbを使えるようにする
+    Renderの環境変数でサービスアカウントJSONを渡す
+    """
+    global db
 
-    # JSON文字列を辞書に変換
-    firebase_key_dict = json.loads(firebase_key_str)
+    # Renderに JSON を環境変数で保存している場合
+    cred_json = os.environ.get("FIREBASE_CRED_JSON")
+    if not cred_json:
+        raise RuntimeError("FIREBASE_CRED_JSON が環境変数に設定されていません")
 
-    # Firebase初期化（複数回初期化防止）
-    if not firebase_admin._apps:
-        cred = credentials.Certificate(firebase_key_dict)
-        firebase_admin.initialize_app(cred)
-
-    # Firestoreクライアントを返す
-    return firestore.client()
+    import json
+    cred_dict = json.loads(cred_json)
+    cred = credentials.Certificate(cred_dict)
+    firebase_admin.initialize_app(cred)
+    db = firestore.client()
+    print("✅ Firebase initialized")
