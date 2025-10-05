@@ -5,29 +5,55 @@ import aiohttp
 class Youtube(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # 複数の Invidious インスタンス
+        # 提供された Invidious インスタンスリスト
         self.invidious_instances = [
-            "https://invidious.snopyta.org/api/v1/search",
-            "https://invidious.kavin.rocks/api/v1/search",
-            "https://invidious.namazso.eu/api/v1/search",
-            "https://invidious.fdn.fr/api/v1/search",
-            "https://invidious.tiekoetter.com/api/v1/search"
+            "https://nyc1.iv.ggtyler.dev",
+            "https://invid-api.poketube.fun/",
+            "https://cal1.iv.ggtyler.dev",
+            "https://invidious.nikkosphere.com",
+            "https://lekker.gay",
+            "https://invidious.f5.si",
+            "https://invidious.lunivers.trade",
+            "https://invid-api.poketube.fun",
+            "https://pol1.iv.ggtyler.dev",
+            "https://eu-proxy.poketube.fun",
+            "https://iv.melmac.space",
+            "https://invidious.reallyaweso.me",
+            "https://invidious.dhusch.de",
+            "https://usa-proxy2.poketube.fun",
+            "https://id.420129.xyz",
+            "https://invidious.darkness.service",
+            "https://iv.datura.network",
+            "https://invidious.jing.rocks",
+            "https://invidious.private.coffee",
+            "https://youtube.mosesmang.com",
+            "https://iv.duti.dev",
+            "https://invidious.projectsegfau.lt",
+            "https://invidious.perennialte.ch",
+            "https://invidious.einfachzocken.eu",
+            "https://invidious.adminforge.de",
+            "https://inv.nadeko.net",
+            "https://invidious.esmailelbob.xyz",
+            "https://invidious.0011.lt",
+            "https://invidious.ducks.party"
         ]
 
     @commands.hybrid_command(name="youtube", description="Youtube動画を検索します (Invidious)")
     async def youtube(self, ctx, *, query: str):
         data = None
-        # インスタンスを順に試す
-        async with aiohttp.ClientSession() as session:
-            for url in self.invidious_instances:
+        # 複数インスタンスを順番に試す
+        timeout = aiohttp.ClientTimeout(total=5)  # 5秒でタイムアウト
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            for base_url in self.invidious_instances:
                 try:
-                    async with session.get(url, params={"q": query, "type": "video"}, timeout=5) as resp:
+                    api_url = f"{base_url}/api/v1/search"
+                    async with session.get(api_url, params={"q": query, "type": "video"}) as resp:
                         if resp.status == 200:
                             data = await resp.json()
                             if data:
-                                break  # 成功したらループを抜ける
+                                break
                 except Exception:
-                    continue  # 応答なしの場合は次のインスタンスへ
+                    continue
 
         if not data:
             await ctx.send("全ての Invidious インスタンスで検索に失敗しました。")
