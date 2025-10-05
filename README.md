@@ -1,4 +1,4 @@
-# HGHomeBot v0.2
+# HGHomeBot v0.2.1
 
 RenderでホストされているDiscord多機能Botです。  
 モジュール式構成により、各機能を独立して開発・更新できます。
@@ -6,6 +6,10 @@ RenderでホストされているDiscord多機能Botです。
 ---
 
 ### 🔄履歴
+**v0.2.1**
+・searchコマンドを追加
+・チケット機能を追加
+
 **v0.2**
 ・管理者専用コマンドを追加
 ・FireBaseでデータを永続保持に
@@ -21,6 +25,11 @@ RenderでホストされているDiscord多機能Botです。
 
 ## ⚙️ 機能一覧
 
+### 🛠 管理者機能
+- `/timeout user: duration:` … 指定ユーザーを一時ミュート
+- `/giverole user: role:` … 指定ユーザーにロールを付与
+- `/ticket_button` …チケット案内を追加
+- 
 ### 💰 通貨システム
 - `/daily` … 20時間おきにログインボーナスを受け取る  
 - `/top type:coin` … 所持金ランキングを表示（データがない場合は「データがありません」と表示）
@@ -31,6 +40,7 @@ RenderでホストされているDiscord多機能Botです。
 - `/slot bet:` … スロットマシンで賭け額に応じた結果を獲得
 - `/dice bet:` … ダイスで遊びます
 
-### 🛠 管理者機能
-- `/timeout user: duration:` … 指定ユーザーを一時ミュート
-- `/giverole user: role:` … 指定ユーザーにロールを付与
+### 🔍検索機能
+- `/search query:` …Web検索を行います
+
+
