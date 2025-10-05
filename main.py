@@ -41,7 +41,7 @@ async def setup():
     await bot.add_cog(Search(bot))
     await bot.add_cog(Ticket(bot))
     await bot.add_cog(Youtube(bot))
-    await bot.add_cog(Weather(bot)) ⬅️ ここを追加
+    await bot.add_cog(Weather(bot, db))
     
 # 🔹 keep_alive がある場合は呼び出し
 try:
