@@ -31,11 +31,14 @@ async def setup():
     from program.currency.casino import Casino
     from program.top import Top
     from program.search import Search
+    from program.ticket import Ticket  # ← 新規追加
 
     await bot.add_cog(Coin(bot, db))
     await bot.add_cog(Casino(bot, db))
     await bot.add_cog(Top(bot, db))
     await bot.add_cog(Search(bot))
+    await bot.add_cog(Ticket(bot))  # ← 新規追加
+
 
 # 🔹 keep_alive がある場合は呼び出し
 try:
