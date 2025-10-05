@@ -33,6 +33,9 @@ async def setup():
     from program.search import Search
     from program.ticket import Ticket
     from program.youtube import Youtube 
+    from program.currency.steal import Steal
+    from program.currency.bank import Bank
+    from program.status import Status
 
     await bot.add_cog(Coin(bot, db))
     await bot.add_cog(Casino(bot, db))
@@ -40,7 +43,9 @@ async def setup():
     await bot.add_cog(Search(bot))
     await bot.add_cog(Ticket(bot))
     await bot.add_cog(Youtube(bot))
-
+    await bot.add_cog(Steal(bot, db))
+    await bot.add_cog(Bank(bot, db))
+    await bot.add_cog(Status(bot, db))
 
 # 🔹 keep_alive がある場合は呼び出し
 try:
