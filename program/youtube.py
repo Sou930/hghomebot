@@ -5,22 +5,32 @@ import aiohttp
 class Youtube(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # Invidious インスタンス URL
-        self.invidious_base = "https://invidious.snopyta.org/api/v1/search"
+        # 複数の Invidious インスタンス
+        self.invidious_instances = [
+            "https://invidious.snopyta.org/api/v1/search",
+            "https://invidious.kavin.rocks/api/v1/search",
+            "https://invidious.namazso.eu/api/v1/search",
+            "https://invidious.fdn.fr/api/v1/search",
+            "https://invidious.tiekoetter.com/api/v1/search"
+        ]
 
     @commands.hybrid_command(name="youtube", description="Youtube動画を検索します (Invidious)")
     async def youtube(self, ctx, *, query: str):
-        params = {"q": query, "type": "video"}  # 動画のみ取得
-
+        data = None
+        # インスタンスを順に試す
         async with aiohttp.ClientSession() as session:
-            async with session.get(self.invidious_base, params=params) as resp:
-                if resp.status != 200:
-                    await ctx.send("検索に失敗しました。")
-                    return
-                data = await resp.json()
+            for url in self.invidious_instances:
+                try:
+                    async with session.get(url, params={"q": query, "type": "video"}, timeout=5) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            if data:
+                                break  # 成功したらループを抜ける
+                except Exception:
+                    continue  # 応答なしの場合は次のインスタンスへ
 
         if not data:
-            await ctx.send("検索結果が見つかりませんでした。")
+            await ctx.send("全ての Invidious インスタンスで検索に失敗しました。")
             return
 
         # 上位5件を表示
