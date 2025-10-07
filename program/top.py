@@ -15,6 +15,7 @@ class Top(commands.Cog):
             app_commands.Choice(name="💰 所持金ランキング", value="coin"),
             app_commands.Choice(name="🏦 銀行残高ランキング", value="bank"),
             app_commands.Choice(name="💼 職業レベルランキング", value="work_level"),
+            app_commands.Choice(name="💵 合計資産ランキング", value="total")
         ]
     )
     async def top(self, interaction: discord.Interaction, type: app_commands.Choice[str]):
@@ -25,7 +26,14 @@ class Top(commands.Cog):
         ranking = []
         for doc in docs:
             data = doc.to_dict()
-            value = data.get(ranking_type, 0)
+            if ranking_type == "coin":
+                value = data.get("coins", 0)
+            elif ranking_type == "bank":
+                value = data.get("bank", 0)
+            elif ranking_type == "work_level":
+                value = data.get("work_level", 0)
+            elif ranking_type == "total":
+                value = data.get("coins", 0) + data.get("bank", 0)
             ranking.append((doc.id, value))
 
         # 🔹 降順ソート（上位10人）
@@ -42,15 +50,20 @@ class Top(commands.Cog):
             embed.description = "データがありません。"
         else:
             for i, (user_id, value) in enumerate(top_10, start=1):
-                user = await self.bot.fetch_user(int(user_id))
+                try:
+                    user = await self.bot.fetch_user(int(user_id))
+                    name = user.display_name
+                except:
+                    name = "不明なユーザー"
                 embed.add_field(
-                    name=f"#{i} {user.display_name}",
+                    name=f"#{i} {name}",
                     value=f"{value:,}",
                     inline=False
                 )
 
         await interaction.response.send_message(embed=embed)
 
-# Cog登録
+# 🔹 Cog登録
 async def setup(bot, db):
     await bot.add_cog(Top(bot, db))
+
