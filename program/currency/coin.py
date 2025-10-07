@@ -9,31 +9,32 @@ class Coin(commands.Cog):
         self.bot = bot
         self.db = db
 
-    # ユーザーの Firebase ドキュメント参照
+    # Firebase ドキュメント参照
     def get_user_ref(self, user_id):
         return self.db.collection("users").document(str(user_id))
 
-    # ユーザーデータ取得
+    # ユーザーデータ取得（必要な項目を初期化）
     async def get_user_data(self, user_id):
         doc = self.get_user_ref(user_id).get()
         if doc.exists:
             data = doc.to_dict()
-            # 必要なフィールドがない場合の初期化
-            if "coins" not in data:
-                data["coins"] = 0
-            if "work_level" not in data:
-                data["work_level"] = 1
-            if "last_work" not in data:
-                data["last_work"] = None
-            return data
         else:
-            return {"coins": 0, "work_level": 1, "last_work": None}
+            data = {}
 
-    # ユーザーデータ保存（merge=Trueで部分更新）
+        # 必須フィールドを保証
+        data.setdefault("coins", 0)
+        data.setdefault("work_level", 1)
+        data.setdefault("work_exp", 0)
+        data.setdefault("last_work", None)
+        data.setdefault("last_daily", None)
+        data.setdefault("streak", 0)
+        return data
+
+    # データ保存（部分更新）
     async def set_user_data(self, user_id, data):
         self.get_user_ref(user_id).set(data, merge=True)
 
-    # コインを追加
+    # コイン加算
     async def add_coins(self, user_id, amount):
         ref = self.get_user_ref(user_id)
         doc = ref.get()
@@ -44,7 +45,7 @@ class Coin(commands.Cog):
         ref.set({"coins": coins}, merge=True)
         return coins
 
-    # コインを減らす
+    # コイン減算
     async def remove_coins(self, user_id, amount):
         ref = self.get_user_ref(user_id)
         doc = ref.get()
@@ -59,8 +60,8 @@ class Coin(commands.Cog):
     async def daily(self, interaction: discord.Interaction):
         user_id = interaction.user.id
         data = await self.get_user_data(user_id)
-
         now = datetime.utcnow()
+
         last_claim = data.get("last_daily")
         if last_claim:
             last_time = datetime.fromisoformat(last_claim)
@@ -69,16 +70,15 @@ class Coin(commands.Cog):
                 hours, remainder = divmod(int(remaining.total_seconds()), 3600)
                 minutes, seconds = divmod(remainder, 60)
                 await interaction.response.send_message(
-                    f"⏳ まだ daily を受け取れません。あと {hours}時間 {minutes}分 {seconds}秒 待ってください。",
+                    f"⏳ まだ受け取れません。あと {hours}時間 {minutes}分 {seconds}秒 待ってください。",
                     ephemeral=True
                 )
                 return
 
-        reward = 100  # 基本ボーナス
+        reward = 100
         await self.add_coins(user_id, reward)
         await self.set_user_data(user_id, {"last_daily": now.isoformat()})
-
-        await interaction.response.send_message(f"🎁 daily ボーナス {reward} コインを獲得！")
+        await interaction.response.send_message(f"🎁 デイリーボーナスとして {reward} コインを獲得！")
 
     # 🔹 /give_coin コマンド
     @app_commands.command(name="give_coin", description="指定ユーザーにコインを渡す")
@@ -96,13 +96,14 @@ class Coin(commands.Cog):
         await self.add_coins(user.id, price)
         await interaction.response.send_message(f"✅ {user.display_name} に {price} コインを渡しました！")
 
-    # 🔹 /work コマンド
-    @app_commands.command(name="work", description="仕事をしてコインを稼ぐ（4時間ごと）")
+    # 🔹 /work コマンド（経験値・レベルアップ対応）
+    @app_commands.command(name="work", description="仕事をしてコインと経験値を得る（4時間ごと）")
     async def work(self, interaction: discord.Interaction):
         user_id = interaction.user.id
         data = await self.get_user_data(user_id)
-
         now = datetime.utcnow()
+
+        # クールダウン（4時間）
         last_work = data.get("last_work")
         if last_work:
             last_time = datetime.fromisoformat(last_work)
@@ -116,21 +117,33 @@ class Coin(commands.Cog):
                 )
                 return
 
-        # 労働レベルに応じた報酬
-        level = data.get("work_level", 1)
-        base_reward = random.randint(50, 100)
-        reward = base_reward * level
+        # 🔹 労働報酬と経験値
+        level = data["work_level"]
+        earned_coins = random.randint(50, 100) * level
+        earned_exp = random.randint(15, 30)
 
-        # コイン追加
-        await self.add_coins(user_id, reward)
+        data["coins"] += earned_coins
+        data["work_exp"] += earned_exp
+        data["last_work"] = now.isoformat()
 
-        # 最後の労働時間更新
-        await self.set_user_data(user_id, {"last_work": now.isoformat()})
+        # 🔹 レベルアップ判定
+        required_exp = data["work_level"] * 100
+        leveled_up = False
+        while data["work_exp"] >= required_exp:
+            data["work_exp"] -= required_exp
+            data["work_level"] += 1
+            required_exp = data["work_level"] * 100
+            leveled_up = True
 
-        await interaction.response.send_message(
-            f"💼 仕事をしました！労働レベル {level} で {reward} コインを獲得！"
-        )
+        await self.set_user_data(user_id, data)
 
-# Cog 登録用
+        msg = f"💼 労働完了！\n💰 +{earned_coins} コイン\n✨ +{earned_exp} 経験値"
+        if leveled_up:
+            msg += f"\n🎉 **レベルアップ！ 現在の労働レベル: {data['work_level']}**"
+
+        await interaction.response.send_message(msg)
+
+# Cog 登録
 async def setup(bot, db):
-    await bot.add_cog(Coin(bot, db)) 
+    await bot.add_cog(Coin(bot, db))
+
