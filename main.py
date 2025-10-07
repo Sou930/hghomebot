@@ -1,7 +1,6 @@
 import os
 import discord
 from discord.ext import commands
-from discord import app_commands
 import asyncio
 
 # 🔹 Firebase 初期化
@@ -37,27 +36,30 @@ async def setup(bot, db):
     from program.ticket import Ticket
     from program.youtube import Youtube
 
-    # 🔹 Cog の追加（dbが必要なものは引数に db を渡す）
+    # 🔹 Cog の追加（dbが必要なものは db も渡す）
     await bot.add_cog(Coin(bot, db))
     await bot.add_cog(Casino(bot, db))
-    await bot.add_cog(Bank(bot))        # Bank は db を setup 内で直接使う場合は bot のみ
+    await bot.add_cog(Bank(bot))        # Bank は db を直接使う場合 bot のみ
     await bot.add_cog(Top(bot, db))
     await bot.add_cog(Profile(bot, db))
     await bot.add_cog(Search(bot))
     await bot.add_cog(Ticket(bot))
     await bot.add_cog(Youtube(bot))
-    
-# 🔹 keep_alive がある場合は呼び出し
+
+# 🔹 keep_alive がある場合は呼び出し（Renderで常時稼働用）
 try:
     from keep_alive import keep_alive
     keep_alive()
-except:
+except ImportError:
     pass
 
 # 🔹 Bot 起動
 async def main():
-    await setup()
+    # Cog登録に bot と db を渡す
+    await setup(bot, db)
+    # Bot起動
     await bot.start(TOKEN)
 
 if __name__ == "__main__":
     asyncio.run(main())
+
