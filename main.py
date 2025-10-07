@@ -26,24 +26,26 @@ async def on_ready():
         print(f"❌ Sync error: {e}")
 
 # 🔹 Cog登録
-async def setup_extensions():
-    from program.currency.coin import setup as coin_setup
-    from program.currency.casino import setup as casino_setup
-    from program.top import setup as top_setup
-    from program.search import setup as search_setup
-    from program.ticket import setup as ticket_setup
-    from program.youtube import setup as youtube_setup
-    from program.bank import setup as bank_setup
-    from program.profile import setup as profile_setup
+async def setup(bot, db):
+    # 🔹 Cog のインポート
+    from program.currency.coin import Coin
+    from program.currency.casino import Casino
+    from program.currency.bank import Bank
+    from program.top import Top
+    from program.profile import Profile
+    from program.search import Search
+    from program.ticket import Ticket
+    from program.youtube import Youtube
 
-    await coin_setup(bot, db)
-    await casino_setup(bot, db)
-    await bank_setup(bot, db)
-    await top_setup(bot, db)
-    await profile_setup(bot, db)
-    await search_setup(bot)
-    await ticket_setup(bot)
-    await youtube_setup(bot)
+    # 🔹 Cog の追加（dbが必要なものは引数に db を渡す）
+    await bot.add_cog(Coin(bot, db))
+    await bot.add_cog(Casino(bot, db))
+    await bot.add_cog(Bank(bot))        # Bank は db を setup 内で直接使う場合は bot のみ
+    await bot.add_cog(Top(bot, db))
+    await bot.add_cog(Profile(bot, db))
+    await bot.add_cog(Search(bot))
+    await bot.add_cog(Ticket(bot))
+    await bot.add_cog(Youtube(bot))
     
 # 🔹 keep_alive がある場合は呼び出し
 try:
