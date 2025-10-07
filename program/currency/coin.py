@@ -55,7 +55,7 @@ class Coin(commands.Cog):
         ref.set({"coins": coins - amount}, merge=True)
         return True
 
-    # 🔹 /daily コマンド
+    # 🔹 /daily コマンド（連続ボーナス付き）
     @app_commands.command(name="daily", description="毎日のログインボーナス")
     async def daily(self, interaction: discord.Interaction):
         user_id = interaction.user.id
@@ -63,10 +63,16 @@ class Coin(commands.Cog):
         now = datetime.utcnow()
 
         last_claim = data.get("last_daily")
+        streak = data.get("streak", 0)
+
+        # 🔸 最後の受け取りがある場合
         if last_claim:
             last_time = datetime.fromisoformat(last_claim)
-            if now - last_time < timedelta(hours=20):
-                remaining = timedelta(hours=20) - (now - last_time)
+            diff = now - last_time
+
+            # 20時間以内 → まだ受け取れない
+            if diff < timedelta(hours=20):
+                remaining = timedelta(hours=20) - diff
                 hours, remainder = divmod(int(remaining.total_seconds()), 3600)
                 minutes, seconds = divmod(remainder, 60)
                 await interaction.response.send_message(
@@ -75,10 +81,35 @@ class Coin(commands.Cog):
                 )
                 return
 
-        reward = 100
+            # 48時間以上 → streakリセット
+            elif diff > timedelta(hours=48):
+                streak = 1
+            else:
+                streak += 1
+        else:
+            # 初回受け取り
+            streak = 1
+
+        # 🔹 連続ボーナス計算
+        base_reward = 100
+        bonus = min(streak * 10, 200)  # 1日目+10, 2日目+20…最大+200
+        reward = base_reward + bonus
+
+        # 🔹 データ保存
         await self.add_coins(user_id, reward)
-        await self.set_user_data(user_id, {"last_daily": now.isoformat()})
-        await interaction.response.send_message(f"🎁 デイリーボーナスとして {reward} コインを獲得！")
+        await self.set_user_data(user_id, {
+            "last_daily": now.isoformat(),
+            "streak": streak
+        })
+
+        # 🔹 返信
+        msg = (
+            f"🎁 デイリーボーナスを受け取りました！\n"
+            f"💰 獲得：{reward} コイン（基本 {base_reward} + ボーナス {bonus}）\n"
+            f"🔥 連続ログイン {streak} 日目！"
+        )
+        await interaction.response.send_message(msg)
+
 
     # 🔹 /give_coin コマンド
     @app_commands.command(name="give_coin", description="指定ユーザーにコインを渡す")
