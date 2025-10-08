@@ -2,6 +2,9 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
+COIN_TO_JPY = 10  # 1コイン = 10円
+JPY_TO_USD = 1 / 150  # 仮に1ドル=150円（必要に応じて変更）
+
 class Top(commands.Cog):
     def __init__(self, bot, db):
         self.bot = bot
@@ -15,7 +18,8 @@ class Top(commands.Cog):
             app_commands.Choice(name="💰 所持金ランキング", value="coin"),
             app_commands.Choice(name="🏦 銀行残高ランキング", value="bank"),
             app_commands.Choice(name="💼 職業レベルランキング", value="work_level"),
-            app_commands.Choice(name="💵 合計資産ランキング", value="total")
+            app_commands.Choice(name="💵 合計資産ランキング", value="total"),
+            app_commands.Choice(name="💲 ドル換算ランキング", value="usd")
         ]
     )
     async def top(self, interaction: discord.Interaction, type: app_commands.Choice[str]):
@@ -26,14 +30,21 @@ class Top(commands.Cog):
         ranking = []
         for doc in docs:
             data = doc.to_dict()
+            coins = data.get("coins", 0)
+            bank = data.get("bank", 0)
+            work_level = data.get("work_level", 0)
+
             if ranking_type == "coin":
-                value = data.get("coins", 0)
+                value = coins
             elif ranking_type == "bank":
-                value = data.get("bank", 0)
+                value = bank
             elif ranking_type == "work_level":
-                value = data.get("work_level", 0)
+                value = work_level
             elif ranking_type == "total":
-                value = data.get("coins", 0) + data.get("bank", 0)
+                value = coins + bank
+            elif ranking_type == "usd":
+                total_jpy = (coins + bank) * COIN_TO_JPY
+                value = round(total_jpy * JPY_TO_USD, 2)
             ranking.append((doc.id, value))
 
         # 🔹 降順ソート（上位10人）
@@ -66,4 +77,3 @@ class Top(commands.Cog):
 # 🔹 Cog登録
 async def setup(bot, db):
     await bot.add_cog(Top(bot, db))
-
