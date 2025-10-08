@@ -10,7 +10,6 @@ class Help(commands.Cog):
     async def help(self, interaction: discord.Interaction):
         embed = discord.Embed(
             title="📖 HGHomeBot コマンド一覧",
-            description="各カテゴリの主要コマンドをまとめました！",
             color=discord.Color.blurple()
         )
 
