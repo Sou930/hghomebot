@@ -27,6 +27,7 @@ async def on_ready():
 # 🔹 Cog登録
 async def setup(bot, db):
     # 🔹 Cog のインポート
+    from program.admin.admin import Admin
     from program.currency.coin import Coin
     from program.currency.casino import Casino
     from program.currency.bank import Bank
@@ -38,6 +39,7 @@ async def setup(bot, db):
     from program.help import Help
 
     # 🔹 Cog の追加（dbが必要なものは db も渡す）
+    await bot.add_cog(Admin(bot))
     await bot.add_cog(Coin(bot, db))
     await bot.add_cog(Casino(bot, db))
     await bot.add_cog(Bank(bot))        # Bank は db を直接使う場合 bot のみ
