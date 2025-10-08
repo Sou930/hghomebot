@@ -7,34 +7,30 @@ class Profile(commands.Cog):
         self.bot = bot
         self.db = db
 
-    # 🔹 ユーザー情報取得
+    # 🔹 ユーザーデータ取得
     async def get_user_data(self, user_id: int):
         ref = self.db.collection("users").document(str(user_id))
         doc = ref.get()
         if doc.exists:
             data = doc.to_dict()
-            # 欠けている値を補完
-            if "coins" not in data:
-                data["coins"] = 0
-            if "bank" not in data:
-                data["bank"] = 0
-            if "work_level" not in data:
-                data["work_level"] = 1
+            if "coins" not in data: data["coins"] = 0
+            if "bank" not in data: data["bank"] = 0
+            if "work_level" not in data: data["work_level"] = 1
+            if "dollar" not in data: data["dollar"] = 0.0  # 既存のフィールドを確認
             return data
         else:
-            return {"coins": 0, "bank": 0, "work_level": 1}
+            return {"coins": 0, "bank": 0, "work_level": 1, "dollar": 0.0}
 
     # 🔹 /profile コマンド
     @app_commands.command(name="profile", description="自分のプロフィールを表示します")
     async def profile(self, interaction: discord.Interaction):
         user = interaction.user
-        user_id = user.id
-        data = await self.get_user_data(user_id)
+        data = await self.get_user_data(user.id)
 
         coins = data.get("coins", 0)
         bank = data.get("bank", 0)
         work_level = data.get("work_level", 1)
-
+        dollar = data.get("dollar", 0.0)  # 所持ドル
         total = coins + bank
 
         embed = discord.Embed(
@@ -43,8 +39,9 @@ class Profile(commands.Cog):
         )
         embed.add_field(name="💰 所持金", value=f"{coins} コイン", inline=True)
         embed.add_field(name="🏦 銀行残高", value=f"{bank} コイン", inline=True)
+        embed.add_field(name="💵 所持ドル", value=f"${dollar:.2f} USD", inline=True)
         embed.add_field(name="💼 職業レベル", value=f"{work_level}", inline=True)
-        embed.add_field(name="💵 合計資産", value=f"{total} コイン", inline=False)
+        embed.add_field(name="💰 合計資産", value=f"{total} コイン", inline=False)
         embed.set_thumbnail(url=user.display_avatar.url)
 
         await interaction.response.send_message(embed=embed)
