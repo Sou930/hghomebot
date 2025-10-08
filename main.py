@@ -40,7 +40,6 @@ async def setup(bot, db):
     from program.currency.trade import Trade
     from program.admin.role import RoleManager
 
-
     # 🔹 Cog の追加（dbが必要なものは db も渡す）
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Coin(bot, db))
@@ -53,7 +52,11 @@ async def setup(bot, db):
     await bot.add_cog(Youtube(bot))
     await bot.add_cog(Help(bot))
     await bot.add_cog(Trade(bot, db))
-    await bot.add_cog(RoleManager(bot))
+    
+    # 🔹 RoleManager は既に /giverole が登録されていない場合のみ追加
+    if "giverole" not in bot.tree.get_commands():
+        await bot.add_cog(RoleManager(bot))
+
 
 
 # 🔹 keep_alive がある場合は呼び出し（Renderで常時稼働用）
