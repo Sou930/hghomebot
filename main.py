@@ -33,9 +33,9 @@ async def setup(bot, db):
     from program.currency.bank import Bank
     from program.top import Top
     from program.profile import Profile
-    from program.search import Search
+    from program.search.search import Search
     from program.ticket import Ticket
-    from program.youtube import Youtube
+    from program.search.youtube import Youtube
     from program.help import Help
     from program.currency.trade import Trade
 
