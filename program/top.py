@@ -2,9 +2,6 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-COIN_TO_JPY = 10  # 1コイン = 10円
-JPY_TO_USD = 1 / 150  # 仮に1ドル=150円（必要に応じて変更）
-
 class Top(commands.Cog):
     def __init__(self, bot, db):
         self.bot = bot
@@ -19,7 +16,7 @@ class Top(commands.Cog):
             app_commands.Choice(name="🏦 銀行残高ランキング", value="bank"),
             app_commands.Choice(name="💼 職業レベルランキング", value="work_level"),
             app_commands.Choice(name="💵 合計資産ランキング", value="total"),
-            app_commands.Choice(name="💲 ドル換算ランキング", value="usd")
+            app_commands.Choice(name="💲 所持ドルランキング", value="dollar_rank")
         ]
     )
     async def top(self, interaction: discord.Interaction, type: app_commands.Choice[str]):
@@ -30,21 +27,16 @@ class Top(commands.Cog):
         ranking = []
         for doc in docs:
             data = doc.to_dict()
-            coins = data.get("coins", 0)
-            bank = data.get("bank", 0)
-            work_level = data.get("work_level", 0)
-
             if ranking_type == "coin":
-                value = coins
+                value = data.get("coins", 0)
             elif ranking_type == "bank":
-                value = bank
+                value = data.get("bank", 0)
             elif ranking_type == "work_level":
-                value = work_level
+                value = data.get("work_level", 0)
             elif ranking_type == "total":
-                value = coins + bank
-            elif ranking_type == "usd":
-                total_jpy = (coins + bank) * COIN_TO_JPY
-                value = round(total_jpy * JPY_TO_USD, 2)
+                value = data.get("coins", 0) + data.get("bank", 0)
+            elif ranking_type == "dollar_rank":
+                value = data.get("dollar", 0.0)
             ranking.append((doc.id, value))
 
         # 🔹 降順ソート（上位10人）
@@ -66,9 +58,13 @@ class Top(commands.Cog):
                     name = user.display_name
                 except:
                     name = "不明なユーザー"
+                if ranking_type == "dollar_rank":
+                    display_value = f"${value:,.2f}"  # ドル表示
+                else:
+                    display_value = f"{value:,}"
                 embed.add_field(
                     name=f"#{i} {name}",
-                    value=f"{value:,}",
+                    value=display_value,
                     inline=False
                 )
 
