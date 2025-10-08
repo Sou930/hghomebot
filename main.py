@@ -37,18 +37,21 @@ async def setup(bot, db):
     from program.ticket import Ticket
     from program.youtube import Youtube
     from program.help import Help
+    from program.currency.trade import Trade
 
     # 🔹 Cog の追加（dbが必要なものは db も渡す）
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Coin(bot, db))
     await bot.add_cog(Casino(bot, db))
-    await bot.add_cog(Bank(bot))        # Bank は db を直接使う場合 bot のみ
+    await bot.add_cog(Bank(bot)) 
     await bot.add_cog(Top(bot, db))
     await bot.add_cog(Profile(bot, db))
     await bot.add_cog(Search(bot))
     await bot.add_cog(Ticket(bot))
     await bot.add_cog(Youtube(bot))
     await bot.add_cog(Help(bot))
+    await bot.add_cog(Trade(bot, db))
+
 
 # 🔹 keep_alive がある場合は呼び出し（Renderで常時稼働用）
 try:
