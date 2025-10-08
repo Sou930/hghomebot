@@ -11,14 +11,15 @@ class Top(commands.Cog):
     @app_commands.command(name="top", description="ランキングを表示します")
     @app_commands.describe(type="ランキングの種類を選択してください")
     @app_commands.choices(
-        type=[
-            app_commands.Choice(name="💰 所持金ランキング", value="coin"),
-            app_commands.Choice(name="💲 所持ドルランキング", value="dollar_rank")
-            app_commands.Choice(name="🏦 銀行残高ランキング", value="bank"),
-            app_commands.Choice(name="💼 職業レベルランキング", value="work_level"),
-            app_commands.Choice(name="💵 合計資産ランキング", value="total"),
+        type=[        
+            app_commands.Choice(name="💰 所持金ランキング", value="coin"),       
+            app_commands.Choice(name="🏦 銀行残高ランキング", value="bank"),       
+            app_commands.Choice(name="💼 職業レベルランキング", value="work_level"),      
+            app_commands.Choice(name="💵 合計資産ランキング", value="total"),  
+            app_commands.Choice(name="💲 所持ドルランキング", value="dollar_rank"), 
         ]
     )
+
     async def top(self, interaction: discord.Interaction, type: app_commands.Choice[str]):
         ranking_type = type.value
         users_ref = self.db.collection("users")
