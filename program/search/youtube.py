@@ -5,7 +5,6 @@ import aiohttp
 class Youtube(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        # 提供された Invidious インスタンスリスト
         self.invidious_instances = [
             "https://nyc1.iv.ggtyler.dev",
             "https://invid-api.poketube.fun/",
@@ -41,8 +40,7 @@ class Youtube(commands.Cog):
     @commands.hybrid_command(name="youtube", description="Youtube動画を検索します (Invidious)")
     async def youtube(self, ctx, *, query: str):
         data = None
-        # 複数インスタンスを順番に試す
-        timeout = aiohttp.ClientTimeout(total=5)  # 5秒でタイムアウト
+        timeout = aiohttp.ClientTimeout(total=5)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             for base_url in self.invidious_instances:
                 try:
@@ -59,15 +57,44 @@ class Youtube(commands.Cog):
             await ctx.send("全ての Invidious インスタンスで検索に失敗しました。")
             return
 
-        # 上位5件を表示
-        embed = discord.Embed(title=f"Youtube検索結果: {query}", color=discord.Color.red())
-        for item in data[:5]:
-            title = item.get("title")
-            url = f"https://www.youtube.com/watch?v={item.get('videoId')}"
-            embed.add_field(name=title, value=url, inline=False)
+        results = data[:10]
+        current = 0
 
-        await ctx.send(embed=embed)
+        def create_embed(index):
+            video = results[index]
+            title = video.get("title")
+            video_id = video.get("videoId")
+            description = video.get("description", "説明なし")[:200]
+            url = f"https://www.youtube.com/watch?v={video_id}"
+            embed = discord.Embed(
+                title=title,
+                description=f"{description}\n\n[▶ YouTubeで見る]({url})",
+                color=discord.Color.red()
+            )
+            embed.set_footer(text=f"{index + 1} / {len(results)} 件目")
+            if "videoThumbnails" in video and len(video["videoThumbnails"]) > 0:
+                embed.set_thumbnail(url=video["videoThumbnails"][0]["url"])
+            return embed
 
+        class YoutubeView(discord.ui.View):
+            def __init__(self):
+                super().__init__(timeout=120)
+
+            @discord.ui.button(label="◀ 前へ", style=discord.ButtonStyle.secondary)
+            async def previous(self, interaction: discord.Interaction, button: discord.ui.Button):
+                nonlocal current
+                current = (current - 1) % len(results)
+                await interaction.response.edit_message(embed=create_embed(current), view=self)
+
+            @discord.ui.button(label="次へ ▶", style=discord.ButtonStyle.primary)
+            async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+                nonlocal current
+                current = (current + 1) % len(results)
+                await interaction.response.edit_message(embed=create_embed(current), view=self)
+
+        view = YoutubeView()
+        await ctx.send(embed=create_embed(current), view=view)
 
 async def setup(bot):
     await bot.add_cog(Youtube(bot))
+
