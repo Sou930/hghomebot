@@ -35,6 +35,7 @@ async def setup(bot, db):
     from program.search import Search
     from program.ticket import Ticket
     from program.youtube import Youtube
+    from program.help import Help
 
     # 🔹 Cog の追加（dbが必要なものは db も渡す）
     await bot.add_cog(Coin(bot, db))
@@ -45,6 +46,7 @@ async def setup(bot, db):
     await bot.add_cog(Search(bot))
     await bot.add_cog(Ticket(bot))
     await bot.add_cog(Youtube(bot))
+    await bot.add_cog(Help(bot))
 
 # 🔹 keep_alive がある場合は呼び出し（Renderで常時稼働用）
 try:
