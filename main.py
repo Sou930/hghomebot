@@ -52,10 +52,7 @@ async def setup(bot, db):
     await bot.add_cog(Youtube(bot))
     await bot.add_cog(Help(bot))
     await bot.add_cog(Trade(bot, db))
-    
-    # 🔹 RoleManager は既に /giverole が登録されていない場合のみ追加
-    if "giverole" not in bot.tree.get_commands():
-        await bot.add_cog(RoleManager(bot))
+    await bot.add_cog(RoleManager(bot))
 
 
 
