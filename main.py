@@ -31,6 +31,7 @@ async def setup(bot, db):
     from program.currency.coin import Coin
     from program.currency.casino import Casino
     from program.currency.bank import Bank
+    from program.currency.bonus import Bonus  # ← 追加
     from program.top import Top
     from program.profile import Profile
     from program.search.search import Search
@@ -43,7 +44,8 @@ async def setup(bot, db):
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Coin(bot, db))
     await bot.add_cog(Casino(bot, db))
-    await bot.add_cog(Bank(bot)) 
+    await bot.add_cog(Bank(bot))
+    await bot.add_cog(Bonus(bot, db))  # ← ここで登録
     await bot.add_cog(Top(bot, db))
     await bot.add_cog(Profile(bot, db))
     await bot.add_cog(Search(bot))
@@ -51,6 +53,7 @@ async def setup(bot, db):
     await bot.add_cog(Youtube(bot))
     await bot.add_cog(Help(bot))
     await bot.add_cog(Trade(bot, db))
+
 
 # 🔹 keep_alive がある場合は呼び出し（Renderで常時稼働用）
 try:
