@@ -80,7 +80,8 @@ class Coin(commands.Cog):
 
         # クールダウン（4時間）
 @app_commands.command(name="work", description="仕事をしてコインと経験値を得る（4時間ごと）")
-async def work(self, interaction: discord.Interaction):
+async def work(self, interaction):
+
     user_id = interaction.user.id
     data = await self.get_user_data(user_id)
     now = datetime.utcnow()
