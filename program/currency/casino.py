@@ -75,7 +75,7 @@ class Casino(commands.Cog):
             win = result[0] == result[1] == result[2]
 
         if win:
-            payout = bet * 10
+            payout = bet * 20
             await self.add_coins(interaction.user.id, payout)
             await interaction.response.send_message(f"🎰 {' '.join(result)}\n✨大当たり！ {payout} コインを獲得！✨")
         else:
