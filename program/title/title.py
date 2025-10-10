@@ -30,18 +30,21 @@ class TitleManager(commands.Cog):
         new_titles = []
 
         # 連続ログイン
-        streak = data.get("streak", 0)
-        if streak >= 7 and "7日連続ログイン" not in titles:
-            new_titles.append("7日連続ログイン")
-        if streak >= 30 and "30日連続ログイン" not in titles:
-            new_titles.append("30日連続ログイン")
-        if streak >= 60 and "60日連続ログイン" not in titles:
-            new_titles.append("60日連続ログイン")
+streak = data.get("streak", 0)
+if streak >= 7 and "暇人" not in titles:
+    new_titles.append("暇人")     # 7日連続ログイン
+if streak >= 30 and "ぼっち" not in titles:
+    new_titles.append("ぼっち")   # 30日連続ログイン
+if streak >= 60 and "ニート" not in titles:
+    new_titles.append("ニート")   # 60日連続ログイン
 
-        # 所持金額
-        total_coins = data.get("coins", 0) + data.get("bank", 0)
-        if total_coins >= 100_000 and "資産10万コイン突破" not in titles:
-            new_titles.append("資産10万コイン突破")
+# 所持資産称号
+total_coins = data.get("coins", 0) + data.get("bank", 0)
+if total_coins >= 100_000 and "富豪" not in titles:
+    new_titles.append("富豪")         # 資産10万コイン突破
+if total_coins >= 1_000_000 and "大富豪" not in titles:
+    new_titles.append("大富豪")       # 資産100万コイン突破
+
 
         if new_titles:
             titles.extend(new_titles)
