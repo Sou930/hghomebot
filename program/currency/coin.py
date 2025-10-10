@@ -28,6 +28,7 @@ class Coin(commands.Cog):
         data.setdefault("last_work", None)
         data.setdefault("last_daily", None)
         data.setdefault("streak", 0)
+        data.setdefault("work_locked_until", None)  # 窃盗失敗によるワークロック
         return data
 
     # データ保存（部分更新）
@@ -58,7 +59,7 @@ class Coin(commands.Cog):
     # 🔹 /give_coin コマンド
     @app_commands.command(name="give_coin", description="指定ユーザーにコインを渡す")
     @app_commands.describe(user="受け取るユーザー", price="渡すコイン数")
-    async def give_coin(self, interaction: discord.Interaction, user: discord.Member, price: int):
+    async def give_coin(self, interaction: Interaction, user: discord.Member, price: int):
         if price <= 0:
             await interaction.response.send_message("❌ 1以上の値を指定してください。", ephemeral=True)
             return
@@ -71,78 +72,68 @@ class Coin(commands.Cog):
         await self.add_coins(user.id, price)
         await interaction.response.send_message(f"✅ {user.display_name} に {price} コインを渡しました！")
 
-    # 🔹 /work コマンド（経験値・レベルアップ対応）
+    # 🔹 /work コマンド
     @app_commands.command(name="work", description="仕事をしてコインと経験値を得る（4時間ごと）")
     async def work(self, interaction: Interaction):
         user_id = interaction.user.id
         data = await self.get_user_data(user_id)
         now = datetime.utcnow()
 
-        # クールダウン（4時間）
-@app_commands.command(name="work", description="仕事をしてコインと経験値を得る（4時間ごと）")
-async def work(self, interaction):
+        # 🔒 窃盗失敗による work ロックチェック
+        work_locked_until_str = data.get("work_locked_until")
+        if work_locked_until_str:
+            work_locked_until = datetime.fromisoformat(work_locked_until_str)
+            if now < work_locked_until:
+                remaining = work_locked_until - now
+                hours = remaining.seconds // 3600
+                minutes = (remaining.seconds % 3600) // 60
+                await interaction.response.send_message(
+                    f"⏳ 窃盗失敗により現在 `/work` は使えません。\n"
+                    f"残り時間: {hours}時間 {minutes}分",
+                    ephemeral=True
+                )
+                return
 
-    user_id = interaction.user.id
-    data = await self.get_user_data(user_id)
-    now = datetime.utcnow()
+        # 🔹 既存のクールダウンチェック（4時間）
+        last_work = data.get("last_work")
+        if last_work:
+            last_time = datetime.fromisoformat(last_work)
+            if now - last_time < timedelta(hours=4):
+                remaining = timedelta(hours=4) - (now - last_time)
+                hours, remainder = divmod(int(remaining.total_seconds()), 3600)
+                minutes, seconds = divmod(remainder, 60)
+                await interaction.response.send_message(
+                    f"⏳ まだ働けません。あと {hours}時間 {minutes}分 {seconds}秒 待ってください。",
+                    ephemeral=True
+                )
+                return
 
-    # 🔒 窃盗失敗による work ロックチェック
-    work_locked_until_str = data.get("work_locked_until")
-    if work_locked_until_str:
-        work_locked_until = datetime.fromisoformat(work_locked_until_str)
-        if now < work_locked_until:
-            remaining = work_locked_until - now
-            hours = remaining.seconds // 3600
-            minutes = (remaining.seconds % 3600) // 60
-            await interaction.response.send_message(
-                f"⏳ 窃盗失敗により現在 `/work` は使えません。\n"
-                f"残り時間: {hours}時間 {minutes}分",
-                ephemeral=True
-            )
-            return
+        # 🔹 労働処理（報酬・経験値・レベルアップ）
+        level = data["work_level"]
+        earned_coins = random.randint(50, 100) * level
+        earned_exp = random.randint(15, 30)
 
-    # 🔹 既存のクールダウンチェック（4時間）
-    last_work = data.get("last_work")
-    if last_work:
-        last_time = datetime.fromisoformat(last_work)
-        if now - last_time < timedelta(hours=4):
-            remaining = timedelta(hours=4) - (now - last_time)
-            hours, remainder = divmod(int(remaining.total_seconds()), 3600)
-            minutes, seconds = divmod(remainder, 60)
-            await interaction.response.send_message(
-                f"⏳ まだ働けません。あと {hours}時間 {minutes}分 {seconds}秒 待ってください。",
-                ephemeral=True
-            )
-            return
+        data["coins"] += earned_coins
+        data["work_exp"] += earned_exp
+        data["last_work"] = now.isoformat()
 
-    # 🔹 労働処理（報酬・経験値・レベルアップ）
-    level = data["work_level"]
-    earned_coins = random.randint(50, 100) * level
-    earned_exp = random.randint(15, 30)
-
-    data["coins"] += earned_coins
-    data["work_exp"] += earned_exp
-    data["last_work"] = now.isoformat()
-
-    # レベルアップ判定
-    required_exp = data["work_level"] * 100
-    leveled_up = False
-    while data["work_exp"] >= required_exp:
-        data["work_exp"] -= required_exp
-        data["work_level"] += 1
+        # レベルアップ判定
         required_exp = data["work_level"] * 100
-        leveled_up = True
+        leveled_up = False
+        while data["work_exp"] >= required_exp:
+            data["work_exp"] -= required_exp
+            data["work_level"] += 1
+            required_exp = data["work_level"] * 100
+            leveled_up = True
 
-    await self.set_user_data(user_id, data)
+        await self.set_user_data(user_id, data)
 
-    msg = f"💼 労働完了！\n💰 +{earned_coins} コイン\n✨ +{earned_exp} 経験値"
-    if leveled_up:
-        msg += f"\n🎉 **レベルアップ！ 現在の労働レベル: {data['work_level']}**"
+        msg = f"💼 労働完了！\n💰 +{earned_coins} コイン\n✨ +{earned_exp} 経験値"
+        if leveled_up:
+            msg += f"\n🎉 **レベルアップ！ 現在の労働レベル: {data['work_level']}**"
 
-    await interaction.response.send_message(msg)
-
+        await interaction.response.send_message(msg)
 
 # Cog 登録
 async def setup(bot, db):
     await bot.add_cog(Coin(bot, db))
-
