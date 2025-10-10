@@ -3,23 +3,22 @@ from discord import app_commands
 from discord.ext import commands
 import random
 from datetime import datetime, timedelta
-from data.firebase_init import init_firebase
-
-db = init_firebase()
 
 class Steal(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, db):
         self.bot = bot
+        self.db = db  # 🔹 dbを引数として受け取る
         self.cooldowns = {}  # ユーザーごとのクールダウン管理
 
     # 🔹 ユーザーデータ取得
     async def get_user_data(self, user_id: int):
-        ref = db.collection("users").document(str(user_id))
+        ref = self.db.collection("users").document(str(user_id))
         doc = ref.get()
         if doc.exists:
             return doc.to_dict()
         else:
             data = {
+                "coins": 0,
                 "steal_exp": 0,
                 "steal_level": 1,
                 "work_locked_until": None
@@ -29,7 +28,7 @@ class Steal(commands.Cog):
 
     # 🔹 ユーザーデータ更新
     async def set_user_data(self, user_id: int, new_data: dict):
-        ref = db.collection("users").document(str(user_id))
+        ref = self.db.collection("users").document(str(user_id))
         ref.set(new_data, merge=True)
 
     # 🔹 レベルアップ判定
@@ -131,5 +130,5 @@ class Steal(commands.Cog):
             await interaction.response.send_message(msg)
 
 # 🔹 setup
-async def setup(bot):
-    await bot.add_cog(Steal(bot))
+async def setup(bot, db):
+    await bot.add_cog(Steal(bot, db))
