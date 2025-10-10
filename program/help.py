@@ -14,24 +14,33 @@ class Help(commands.Cog):
         )
 
         embed.add_field(
-            name="💰 通貨システム",
+            name="💰 通貨・報酬システム",
             value=(
                 "/daily … 20時間おきにログインボーナスを受け取る\n"
-                "/top type: … 所持金・銀行残高・職業レベル・合計資産のランキングを表示\n"
                 "/give_coin user: price: … 指定ユーザーにコインを渡す\n"
-                "/bank type: amount: … 銀行に入金/出金（deposit/withdraw）\n"
-                "/profile … 自分の所持金・銀行残高・職業レベルを確認\n"
-                "/dollar … コインとドルのレート表示"
+                "/work … 仕事をしてコインと経験値を獲得（4時間ごと）\n"
+                "/bank withdraw amount: … 銀行から出金（手数料あり）\n"
+                "/profile … 所持金・銀行残高・職業レベルを確認\n"
+                "/dollar … コインとドルのレート表示、交換可能"
             ),
             inline=False
         )
 
         embed.add_field(
-            name="🎰 カジノ機能",
+            name="💀 窃盗機能",
             value=(
-                "/cointoss bet: … コイントス\n"
-                "/slot bet: … スロットマシンで遊ぶ\n"
-                "/dice bet: … ダイスで遊ぶ"
+                "/steal user: … 他ユーザーからコインを盗む（失敗リスクあり）\n"
+                "成功率は窃盗レベルに依存\n"
+                "失敗すると罰金＋/workが1日使用不可"
+            ),
+            inline=False
+        )
+
+        embed.add_field(
+            name="👑 称号機能",
+            value=(
+                "/titles … 獲得した称号を確認\n"
+                "例: 暇人 / ぼっち / ニート / 富豪 / 大富豪"
             ),
             inline=False
         )
@@ -40,24 +49,16 @@ class Help(commands.Cog):
             name="🔍 検索機能",
             value=(
                 "/search type: query: … Web検索/画像検索（ボタンで切替）\n"
-                "/youtube query: … Youtube動画検索（Invidious）"
+                "/youtube query: … YouTube動画検索（Invidious）"
             ),
             inline=False
         )
 
-        embed.add_field(
-            name="🛠 管理者機能",
-            value=(
-                "/timeout user: duration: … 指定ユーザーを一時ミュート\n"
-                "/giverole user: role: … 指定ユーザーにロールを付与\n"
-                "/ticket_button … チケット案内ボタンを作成"
-            ),
-            inline=False
-        )
-
-        embed.set_footer(text="HGHomeBot v0.3 - 最新機能対応")
+        embed.set_footer(text="HGHomeBot v0.3.2 - 最新機能対応")
 
         await interaction.response.send_message(embed=embed)
 
+# 🔹 Cog 登録
 async def setup(bot):
     await bot.add_cog(Help(bot))
+
