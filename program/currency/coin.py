@@ -73,7 +73,7 @@ class Coin(commands.Cog):
 
     # 🔹 /work コマンド（経験値・レベルアップ対応）
     @app_commands.command(name="work", description="仕事をしてコインと経験値を得る（4時間ごと）")
-    async def work(self, interaction: discord.Interaction):
+    async def work(self, interaction: Interaction):
         user_id = interaction.user.id
         data = await self.get_user_data(user_id)
         now = datetime.utcnow()
