@@ -51,8 +51,8 @@ class Casino(commands.Cog):
         else:
             await interaction.response.send_message(f"💔 結果: 裏。 {bet} コインを失いました。")
 
-    # 🔹 /slot
-    @app_commands.command(name="slot", description="スロットで遊ぶ")
+    # 🔹 /slot （当たり確率アップ版）
+    @app_commands.command(name="slot", description="スロットで遊ぶ（当たりやすくなっています）")
     @app_commands.describe(bet="賭けるコインの量")
     async def slot(self, interaction: discord.Interaction, bet: int):
         if bet <= 0:
@@ -64,15 +64,23 @@ class Casino(commands.Cog):
             return
 
         icons = ["🍒", "🍋", "🍊", "🍇", "7️⃣"]
-        result = [random.choice(icons) for _ in range(3)]
-        win = result[0] == result[1] == result[2]
+
+        # 🎯 当たりやすくする（5%の確率で揃う）
+        if random.random() < 0.05:
+            symbol = random.choice(icons)
+            result = [symbol, symbol, symbol]
+            win = True
+        else:
+            result = [random.choice(icons) for _ in range(3)]
+            win = result[0] == result[1] == result[2]
 
         if win:
-            payout = bet * 5
+            payout = bet * 10
             await self.add_coins(interaction.user.id, payout)
-            await interaction.response.send_message(f"🎰 {' '.join(result)}\n大当たり！ {payout} コインを獲得！")
+            await interaction.response.send_message(f"🎰 {' '.join(result)}\n✨大当たり！ {payout} コインを獲得！✨")
         else:
             await interaction.response.send_message(f"🎰 {' '.join(result)}\n残念、{bet} コインを失いました。")
+
 
     # 🔹 /dice
     @app_commands.command(name="dice", description="1～6 の数字を予想して賭ける")
