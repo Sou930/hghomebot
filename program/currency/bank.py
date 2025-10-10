@@ -26,10 +26,10 @@ class Bank(commands.Cog):
         ref = db.collection("users").document(str(user_id))
         ref.set(new_data, merge=True)
 
-    # 🔹 /bank コマンド（deposit / withdraw / balance）
+    # 🔹 /bank コマンド
     @app_commands.command(name="bank", description="銀行操作（預け入れ・引き出し・残高確認）")
     @app_commands.describe(
-        type="操作の種類を選択（deposit=預け入れ、withdraw=引き出し）",
+        type="操作の種類を選択（deposit=預け入れ、withdraw=引き出し、balance=残高確認）",
         amount="金額を指定（例: 100 または all）"
     )
     @app_commands.choices(
@@ -81,15 +81,26 @@ class Bank(commands.Cog):
             await self.set_user_data(user_id, {"coins": coins, "bank": bank})
             await interaction.response.send_message(f"🏦 {amount} コインを銀行に預けました！\n💰 残高: {bank} コイン")
 
-        # --- 引き出し処理 ---
+        # --- 引き出し処理（5%手数料） ---
         elif type.value == "withdraw":
-            if bank < amount:
-                await interaction.response.send_message("🏦 銀行残高が足りません。", ephemeral=True)
+            fee = int(amount * 0.05)  # 手数料5%
+            total_deduction = amount + fee  # 実際に銀行から引かれる額
+
+            if bank < total_deduction:
+                await interaction.response.send_message(
+                    f"🏦 銀行残高が足りません。\n必要額: {total_deduction} コイン（内手数料 {fee} コイン）",
+                    ephemeral=True
+                )
                 return
-            bank -= amount
+
+            bank -= total_deduction
             coins += amount
+
             await self.set_user_data(user_id, {"coins": coins, "bank": bank})
-            await interaction.response.send_message(f"💵 銀行から {amount} コインを引き出しました！\n💰 残高: {bank} コイン")
+            await interaction.response.send_message(
+                f"💵 {amount} コインを引き出しました！（手数料 {fee} コイン）\n"
+                f"🏦 残り銀行残高: {bank} コイン"
+            )
 
 async def setup(bot):
     await bot.add_cog(Bank(bot))
